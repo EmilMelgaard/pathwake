@@ -64,8 +64,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusTarget
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInputModeManager
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
@@ -182,8 +186,14 @@ fun AlarmEditorScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmEditorContent(state: AlarmEditorUiState, actions: AlarmEditorActions, modifier: Modifier = Modifier) {
+    val inputModeManager = LocalInputModeManager.current
     Scaffold(
-        modifier = modifier,
+        // The list-detail scaffold moves focus into the detail pane when its layout changes (e.g. when a phone is
+        // rotated). On touch screens the editor itself takes that focus; otherwise the label would get it and pop up
+        // the keyboard. With a keyboard, focus passes on to the first control as usual.
+        modifier = modifier
+            .focusProperties { canFocus = inputModeManager.inputMode == InputMode.Touch }
+            .focusTarget(),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(if (state.isNew) R.string.new_alarm else R.string.edit_alarm)) },

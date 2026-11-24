@@ -1,8 +1,16 @@
 package io.github.emilmelgaard.pathwake.ui.editor
 
+import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsNotFocused
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -56,6 +64,23 @@ class AlarmEditorContentTest {
         rule.onNodeWithContentDescription("Fewer puzzles").assertIsNotEnabled()
         rule.onNodeWithContentDescription("More puzzles").assertIsEnabled().performClick()
         assertEquals(2, count)
+    }
+
+    @Test
+    fun focusMovedIntoTheEditor_doesNotFocusTheLabel_butTappingItDoes() {
+        val pane = FocusRequester()
+        rule.setContent {
+            PathwakeTheme {
+                // Like the list-detail scaffold, which moves focus into the detail pane when its layout changes.
+                Box(Modifier.focusRequester(pane).focusGroup()) {
+                    AlarmEditorContent(AlarmEditorUiState(loading = false), AlarmEditorActions())
+                }
+            }
+        }
+        rule.runOnIdle { pane.requestFocus() }
+        rule.onNode(hasSetTextAction()).assertIsNotFocused()
+
+        rule.onNode(hasSetTextAction()).performClick().assertIsFocused()
     }
 
     @Test

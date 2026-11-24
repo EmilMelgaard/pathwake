@@ -1,4 +1,4 @@
-package io.github.emilmelgaard.witnessalarm
+package io.github.emilmelgaard.pathwake
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import io.github.emilmelgaard.witnessalarm.ui.main.MainScreen
+import io.github.emilmelgaard.pathwake.ui.main.MainScreen
 
 @Composable
 fun MainNavigation() {

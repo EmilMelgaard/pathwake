@@ -1,4 +1,4 @@
-package io.github.emilmelgaard.witnessalarm.ui.main
+package io.github.emilmelgaard.pathwake.ui.main
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -7,7 +7,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-/** UI tests for [io.github.emilmelgaard.witnessalarm.ui.main.MainScreen]. */
+/** UI tests for [io.github.emilmelgaard.pathwake.ui.main.MainScreen]. */
 class MainScreenTest {
 
     @get:Rule val composeTestRule = createAndroidComposeRule<ComponentActivity>()

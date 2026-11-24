@@ -1,12 +1,16 @@
 # Agent instructions
 
-Open-source Android app (Apache-2.0), hosted at github.com/EmilMelgaard/witness-alarm and published on Google Play.
+Pathwake: open-source Android alarm clock (Apache-2.0) that is dismissed by solving randomly generated line-drawing
+puzzles. No snooze. Tablet-first, phones supported. Hosted at github.com/EmilMelgaard/pathwake, published on Google Play.
+
+Read [docs/PLAN.md](docs/PLAN.md) first: it holds the decisions, architecture and chunked roadmap. Work is delivered
+one chunk per branch + pull request; keep the plan updated when decisions change.
 
 ## Project facts
 
 - Single module `:app`. Kotlin + Jetpack Compose + Material 3 + Navigation 3. AGP 9 built-in Kotlin
   (do **not** add the `org.jetbrains.kotlin.android` plugin).
-- `applicationId` / `namespace`: `io.github.emilmelgaard.witnessalarm` (permanent once on Play, never change).
+- `applicationId` / `namespace`: `io.github.emilmelgaard.pathwake` (permanent once on Play, never change).
 - `minSdk` 29, `targetSdk` 37, `compileSdk` 37.2 (minor API level, set via `compileSdk { version = release(37) { ... } }`).
 - All dependency and plugin versions live in `gradle/libs.versions.toml`; never hard-code versions in build files.
 - JDK 21: Gradle daemon pinned by `gradle/gradle-daemon-jvm.properties`, compilation by `kotlin { jvmToolchain(21) }`.

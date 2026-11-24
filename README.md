@@ -1,8 +1,11 @@
-# Witness Alarm
+# Pathwake
 
-An open-source Android app. *(Description coming soon.)*
+An alarm clock for tablets and phones that you can only turn off by solving randomly generated line-drawing puzzles.
+No snooze.
 
-[![CI](https://github.com/EmilMelgaard/witness-alarm/actions/workflows/ci.yml/badge.svg)](https://github.com/EmilMelgaard/witness-alarm/actions/workflows/ci.yml)
+[![CI](https://github.com/EmilMelgaard/pathwake/actions/workflows/ci.yml/badge.svg)](https://github.com/EmilMelgaard/pathwake/actions/workflows/ci.yml)
+
+Work in progress. See the [development plan](docs/PLAN.md).
 
 ## Tech stack
 

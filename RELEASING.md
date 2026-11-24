@@ -40,7 +40,7 @@ To build a signed release locally, add the same values to `~/.gradle/gradle.prop
 
 1. Create a [Play Console developer account](https://play.google.com/console/signup) (one-time fee, identity verification).
    New personal accounts must run a **closed test with at least 12 testers for 14 days** before production access is granted.
-2. Create the app. The package name is `io.github.emilmelgaard.witnessalarm` and can never be changed.
+2. Create the app. The package name is `io.github.emilmelgaard.pathwake` and can never be changed.
 3. Push the first tag, download the AAB from the workflow run's artifacts, and upload it **manually** to the
    internal testing track (the Play API can only publish to apps that already have an upload).
 4. Complete the store listing, content rating, target audience and Data safety form, and add a privacy policy URL.

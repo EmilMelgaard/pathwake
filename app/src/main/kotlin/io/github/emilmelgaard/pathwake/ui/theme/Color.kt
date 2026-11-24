@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.emilmelgaard.witnessalarm.ui.theme
+package io.github.emilmelgaard.pathwake.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

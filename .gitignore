@@ -1,0 +1,26 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.kotlin/
+/.idea/
+/app/release/
+
+# Signing keys and Play service-account credentials: never commit these.
+*.jks
+*.keystore
+*.p12
+*.pem
+play-service-account*.json
+keystore.properties

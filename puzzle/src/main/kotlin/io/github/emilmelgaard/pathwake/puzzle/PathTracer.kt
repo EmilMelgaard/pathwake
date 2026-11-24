@@ -28,6 +28,7 @@ class PathTracer(private val puzzle: Puzzle, private val config: Config = Config
         val deadZone: Float = 0.05f
     )
 
+    private val symmetric = puzzle.symmetry != Symmetry.NONE
     private val nodes = ArrayList<Pos>()
     private val visited = HashSet<Pos>()
     private var direction: Direction? = null
@@ -66,6 +67,7 @@ class PathTracer(private val puzzle: Puzzle, private val config: Config = Config
         clear()
         nodes += start
         visited += start
+        visited += puzzle.mirror(start)
         return true
     }
 
@@ -90,6 +92,7 @@ class PathTracer(private val puzzle: Puzzle, private val config: Config = Config
                 // Back up: the line now ends somewhere on the edge between previous and head.
                 nodes.removeAt(nodes.lastIndex)
                 visited -= head
+                if (symmetric) visited -= puzzle.mirror(head)
                 direction = best.opposite
                 intoExit = false
                 progress = 1f - (dx * best.dx + dy * best.dy)
@@ -142,6 +145,7 @@ class PathTracer(private val puzzle: Puzzle, private val config: Config = Config
     private fun commit(node: Pos) {
         nodes += node
         visited += node
+        visited += puzzle.mirror(node)
         direction = null
         intoExit = false
         progress = 0f
@@ -163,19 +167,27 @@ class PathTracer(private val puzzle: Puzzle, private val config: Config = Config
         .maxByOrNull { it.second }
         ?.first
 
-    /** How far (0..1) the line may go from [node] in [dir] before hitting a gap or itself. */
+    /**
+     * How far (0..1) the line may go from [node] in [dir] before it (or its mirror image in symmetry puzzles) hits a
+     * gap, itself or the other line.
+     */
     private fun limit(node: Pos, dir: Direction): Float {
         if (isExit(node, dir)) return 1f
-        if (node.step(dir) in puzzle.gaps) return 0.5f - config.gapWidth / 2 - config.lineWidth / 2
-        if (node.step(dir, 2) in visited) return 1f - config.lineWidth
+        val edge = node.step(dir)
+        val next = node.step(dir, 2)
+        if (edge in puzzle.gaps || (symmetric && puzzle.mirror(edge) in puzzle.gaps)) {
+            return 0.5f - config.gapWidth / 2 - config.lineWidth / 2
+        }
+        // Both lines heading into the same edge from opposite ends meet in its middle.
+        if (symmetric && next == puzzle.mirror(node)) return 0.5f - config.lineWidth / 2
+        if (next in visited || (symmetric && (puzzle.mirror(next) in visited || puzzle.mirror(next) == next))) {
+            return 1f - config.lineWidth
+        }
         return 1f
     }
 
-    private fun canMove(node: Pos, dir: Direction): Boolean {
-        if (isExit(node, dir)) return true
-        val next = node.step(dir, 2)
-        return next in puzzle && node.step(dir) !in puzzle.gaps && next !in visited
-    }
+    private fun canMove(node: Pos, dir: Direction): Boolean =
+        isExit(node, dir) || (node.step(dir, 2) in puzzle && limit(node, dir) >= 1f)
 
     private fun perpendicular(dir: Direction, across: Float): Direction = when (dir) {
         Direction.UP, Direction.DOWN -> if (across * dir.dy > 0) Direction.RIGHT else Direction.LEFT

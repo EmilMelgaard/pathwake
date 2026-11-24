@@ -62,7 +62,7 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
 
 Each chunk ends with a demo (screenshots on the tablet and phone emulators), a PR, and a feedback round.
 
-1. **Puzzle engine core and playground** *(in review)*
+1. **Puzzle engine core and playground** *(done, #2)*
    - `:puzzle` module: model, validator, generator, solver and tracer for dots, gaps, colored squares, stars,
      triangles, and multiple starts/exits.
    - Puzzle panel UI with touch drawing, success/failure feedback, both looks.
@@ -73,10 +73,28 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
        Each run is capped at 2.5M solver steps.
      - Easy and Medium solution counts are exact. For larger puzzles where uniqueness can't be proven within budget,
        the generator accepts the puzzle once randomized probes find no alternative solution ("few solutions").
-2. **Advanced mechanics and difficulty calibration**
+2. **Advanced mechanics and difficulty calibration** *(in review)*
    - Tetris (fixed/rotatable), subtractive tetris, elimination, symmetry.
    - Solver-checked generation, 5 calibrated presets, generation-time budget on low-end devices.
    - *Feedback on:* difficulty curve.
+   - Rule details:
+     - **Tetris:** the pieces in a region must tile it exactly. Subtractive pieces cancel blocks of positive pieces,
+       so positives may overlap or stick out where negatives cover them. Equal positive and negative areas cancel
+       completely, and then the region can be any shape.
+     - **Elimination mark:** erases exactly one other symbol or uncovered dot in its region. The region must be broken
+       without it, otherwise the mark itself is an error. Marks don't count towards star pairs.
+     - **Symmetry:** the drawn line's mirror image is drawn too (left-right, top-bottom or 180° rotation). Lines may
+       not touch each other or the axis. Line 0 (blue) starts at the start that comes first in reading order; colored
+       dots must be covered by the line of their color. Either start can be dragged.
+   - Presets:
+     - Easy: 3×3.
+     - Medium: 4×4, may use symmetry.
+     - Hard: 5×4 or 5×5, may add elimination.
+     - Expert: 5×5, always one of subtractive tetris or elimination.
+     - Fiendish: 6×6, one or two advanced mechanics.
+     - All levels draw from the base mechanics: dots, squares, stars, triangles, tetris.
+   - Caps: at most 8 stars and 2 elimination marks per puzzle.
+   - Generation on desktop: Hard averages ~85 ms, Expert ~165 ms, Fiendish ~285 ms (max < 1 s).
 3. **Alarm management**
    - Room data model and next-occurrence calculation (repeat days, dates, pauses, skip, DST/time zones), fully
      unit-tested.

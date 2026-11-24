@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
@@ -37,17 +38,21 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.emilmelgaard.pathwake.R
+import io.github.emilmelgaard.pathwake.puzzle.Elimination
 import io.github.emilmelgaard.pathwake.puzzle.PathTracer
 import io.github.emilmelgaard.pathwake.puzzle.Pos
 import io.github.emilmelgaard.pathwake.puzzle.Puzzle
 import io.github.emilmelgaard.pathwake.puzzle.Square
 import io.github.emilmelgaard.pathwake.puzzle.Star
+import io.github.emilmelgaard.pathwake.puzzle.Symmetry
+import io.github.emilmelgaard.pathwake.puzzle.Tetris
 import io.github.emilmelgaard.pathwake.puzzle.TraceSnapshot
 import io.github.emilmelgaard.pathwake.puzzle.Triangles
 import io.github.emilmelgaard.pathwake.puzzle.Validator
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.sin
 import kotlinx.coroutines.delay
 
@@ -189,65 +194,94 @@ private fun DrawScope.drawPuzzle(
             is Square -> drawSquare(center, u, color, colors.symbolOutline)
             is Star -> drawStar(center, u, color, colors.symbolOutline)
             is Triangles -> drawTriangles(center, u, symbol.count, color)
+            is Tetris -> drawTetris(center, u, symbol, color)
+            is Elimination -> drawElimination(center, u, color)
         }
     }
 
+    val symmetric = puzzle.symmetry != Symmetry.NONE
     solutionHint?.let { hint ->
-        drawPath(
-            linePath(g, hint, exitTip(g, puzzle, hint)),
-            colors.line.copy(alpha = 0.35f),
-            style = lineStroke(lineWidth * 0.4f)
-        )
+        for (line in if (symmetric) listOf(hint, hint.map(puzzle::mirror)) else listOf(hint)) {
+            drawPath(
+                linePath(g, line, exitTip(g, puzzle, line)),
+                colors.line.copy(alpha = 0.35f),
+                style = lineStroke(lineWidth * 0.4f)
+            )
+        }
     }
 
     // The line: the one being drawn, or the last submitted one while showing feedback.
     val lineNodes: List<Pos>
     val tip: Offset?
-    val lineColor: Color
     when {
         trace.nodes.isNotEmpty() -> {
             lineNodes = trace.nodes
-            tip = g.toPx(trace.tipX, trace.tipY)
-            lineColor = colors.line
+            tip = Offset(trace.tipX, trace.tipY)
         }
 
-        feedback is Feedback.Solved -> {
+        feedback != null -> {
             lineNodes = feedback.path
-            tip = exitTip(g, puzzle, feedback.path)
-            lineColor = colors.solvedLine
-        }
-
-        feedback is Feedback.Failed -> {
-            lineNodes = feedback.path
-            tip = exitTip(g, puzzle, feedback.path)
-            lineColor = lerp(colors.line, colors.error, 0.6f + 0.4f * blink)
+            tip = exitTipUnits(puzzle, feedback.path)
         }
 
         else -> {
             lineNodes = emptyList()
             tip = null
-            lineColor = colors.line
         }
     }
+    val lines = mutableListOf<Pair<List<Pos>, Offset?>>()
     if (lineNodes.isNotEmpty()) {
-        val path = linePath(g, lineNodes, tip)
-        val start = g.toPx(lineNodes.first())
-        val failed = feedback is Feedback.Failed && trace.nodes.isEmpty()
-        val glowColor = if (failed) lineColor else colors.lineGlow
+        lines += lineNodes to tip
+        if (symmetric) lines += lineNodes.map(puzzle::mirror) to tip?.let { mirrorUnits(puzzle, it) }
+    }
+    for ((nodes, end) in lines) {
+        val color = when {
+            trace.nodes.isEmpty() && feedback is Feedback.Failed -> lerp(colors.line, colors.error, 0.6f + 0.4f * blink)
+            trace.nodes.isEmpty() && feedback is Feedback.Solved && !symmetric -> colors.solvedLine
+            symmetric -> colors.symmetryLine(if (puzzle.isFirstLineStart(nodes.first())) 0 else 1)
+            else -> colors.line
+        }
+        val path = linePath(g, nodes, end?.let { g.toPx(it.x, it.y) })
+        val start = g.toPx(nodes.first())
+        val glowColor = if (trace.nodes.isEmpty() && feedback is Feedback.Failed) color else colors.lineGlow
         drawGlow(path, start, glowColor.copy(alpha = if (feedback is Feedback.Solved) 0.9f else 0.6f), lineWidth, u)
-        drawPath(path, lineColor, style = lineStroke(lineWidth))
-        drawCircle(lineColor, PuzzleGeometry.START_RADIUS * u, start)
+        drawPath(path, color, style = lineStroke(lineWidth))
+        drawCircle(color, PuzzleGeometry.START_RADIUS * u, start)
     }
 
-    // Dots go on top so they stay visible on the line.
-    val covered = coveredPositions(lineNodes)
+    // Dots go on top so they stay visible on the line. Dots for a specific line take that line's color.
+    val covered = lines.flatMap { coveredPositions(it.first) }.toSet()
     for (dot in puzzle.dots) {
-        val base = if (dot in covered) colors.dotOnLine else colors.dot
+        val line = puzzle.dotLines[dot]
+        val base = when {
+            line != null -> colors.symmetryLine(line)
+            dot in covered -> colors.dotOnLine
+            else -> colors.dot
+        }
         val color = if (dot in violations) lerp(base, colors.error, blink) else base
-        drawPath(hexagonPath(g.toPx(dot), 0.11f * u), color)
+        val hexagon = hexagonPath(g.toPx(dot), 0.11f * u)
+        drawPath(hexagon, color)
+        if (line != null) drawPath(hexagon, colors.dot, style = Stroke(0.025f * u))
     }
 }
 
+/** Mirror image of a point in node units. */
+private fun mirrorUnits(puzzle: Puzzle, p: Offset): Offset = when (puzzle.symmetry) {
+    Symmetry.NONE -> p
+    Symmetry.HORIZONTAL -> Offset(puzzle.width - p.x, p.y)
+    Symmetry.VERTICAL -> Offset(p.x, puzzle.height - p.y)
+    Symmetry.ROTATIONAL -> Offset(puzzle.width - p.x, puzzle.height - p.y)
+}
+
+/** End of the exit stub at the end of [path], in node units. */
+private fun exitTipUnits(puzzle: Puzzle, path: List<Pos>): Offset? {
+    val last = path.lastOrNull() ?: return null
+    val exit = puzzle.exitAt(last) ?: return null
+    return Offset(
+        last.x / 2f + exit.direction.dx * PuzzleGeometry.EXIT_LENGTH,
+        last.y / 2f + exit.direction.dy * PuzzleGeometry.EXIT_LENGTH
+    )
+}
 private fun lineStroke(width: Float) = Stroke(width = width, cap = StrokeCap.Round, join = StrokeJoin.Round)
 
 /** Soft blurred halo behind the line. */
@@ -342,6 +376,43 @@ private fun DrawScope.drawTriangles(center: Offset, u: Float, count: Int, color:
             close()
         }
         drawPath(path, color)
+    }
+}
+
+/** Tetris piece as small blocks; rotatable pieces are tilted, subtractive (negative) ones are hollow. */
+private fun DrawScope.drawTetris(center: Offset, u: Float, tetris: Tetris, color: Color) {
+    val shape = tetris.shape
+    val cellSize = min(0.17f * u, 0.6f * u / max(shape.width, shape.height))
+    val gap = cellSize * 0.2f
+    val left = center.x - shape.width * cellSize / 2
+    val top = center.y - shape.height * cellSize / 2
+    val draw: DrawScope.() -> Unit = {
+        for (b in shape.blocks) {
+            val topLeft = Offset(left + b.x * cellSize + gap / 2, top + b.y * cellSize + gap / 2)
+            val blockSize = Size(cellSize - gap, cellSize - gap)
+            if (tetris.negative) {
+                val stroke = cellSize * 0.2f
+                drawRect(
+                    color,
+                    topLeft + Offset(stroke / 2, stroke / 2),
+                    Size(blockSize.width - stroke, blockSize.height - stroke),
+                    style = Stroke(stroke)
+                )
+            } else {
+                drawRect(color, topLeft, blockSize)
+            }
+        }
+    }
+    if (tetris.rotatable) rotate(15f, center, draw) else draw()
+}
+
+/** Elimination mark: a "Y" with three arms 120 degrees apart. */
+private fun DrawScope.drawElimination(center: Offset, u: Float, color: Color) {
+    val length = 0.16f * u
+    for (degrees in listOf(90.0, 210.0, 330.0)) {
+        val angle = Math.toRadians(degrees)
+        val end = center + Offset((cos(angle) * length).toFloat(), (sin(angle) * length).toFloat())
+        drawLine(color, center, end, 0.07f * u, StrokeCap.Round)
     }
 }
 

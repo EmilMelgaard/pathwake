@@ -32,5 +32,9 @@
     <string name="mechanic_squares">Squares</string>
     <string name="mechanic_stars">Stars</string>
     <string name="mechanic_triangles">Triangles</string>
+    <string name="mechanic_tetris">Tetris</string>
+    <string name="mechanic_negative_tetris">Subtractive tetris</string>
+    <string name="mechanic_elimination">Elimination</string>
+    <string name="mechanic_symmetry">Symmetry</string>
     <string name="mechanic_multiple_starts_exits">Multiple starts/exits</string>
 </resources>

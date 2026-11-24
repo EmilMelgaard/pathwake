@@ -27,9 +27,13 @@ data class PuzzleColors(
     val error: Color,
     val symbols: Map<SymbolColor, Color>,
     /** Outline around squares and stars, for looks where some symbol colors are close to the panel color. */
-    val symbolOutline: Color?
+    val symbolOutline: Color?,
+    /** Colors of line 0 and line 1 in symmetry puzzles (also used for dots that belong to one of them). */
+    val symmetryLines: List<Color>
 ) {
     fun symbol(color: SymbolColor): Color = symbols.getValue(color)
+
+    fun symmetryLine(line: Int): Color = symmetryLines[line]
 
     companion object {
         private val symbolPalette = mapOf(
@@ -38,7 +42,9 @@ data class PuzzleColors(
             SymbolColor.ORANGE to Color(0xFFFF9F1C),
             SymbolColor.MAGENTA to Color(0xFFE548E0),
             SymbolColor.GREEN to Color(0xFF2FD98A),
-            SymbolColor.CYAN to Color(0xFF3CC8F5)
+            SymbolColor.CYAN to Color(0xFF3CC8F5),
+            SymbolColor.YELLOW to Color(0xFFFFD23F),
+            SymbolColor.BLUE to Color(0xFF4C8DFF)
         )
 
         val Panel = PuzzleColors(
@@ -51,7 +57,8 @@ data class PuzzleColors(
             dotOnLine = Color(0xFF101820),
             error = Color(0xFFFF4F4F),
             symbols = symbolPalette,
-            symbolOutline = null
+            symbolOutline = null,
+            symmetryLines = listOf(Color(0xFF8CDCFF), Color(0xFFFFE27A))
         )
 
         @Composable
@@ -67,7 +74,8 @@ data class PuzzleColors(
                 dotOnLine = scheme.onPrimary,
                 error = scheme.error,
                 symbols = symbolPalette,
-                symbolOutline = scheme.outline
+                symbolOutline = scheme.outline,
+                symmetryLines = listOf(scheme.primary, scheme.tertiary)
             )
         }
 

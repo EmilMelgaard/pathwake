@@ -227,6 +227,10 @@ private fun mechanicName(mechanic: Mechanic) = stringResource(
         Mechanic.SQUARES -> R.string.mechanic_squares
         Mechanic.STARS -> R.string.mechanic_stars
         Mechanic.TRIANGLES -> R.string.mechanic_triangles
+        Mechanic.TETRIS -> R.string.mechanic_tetris
+        Mechanic.NEGATIVE_TETRIS -> R.string.mechanic_negative_tetris
+        Mechanic.ELIMINATION -> R.string.mechanic_elimination
+        Mechanic.SYMMETRY -> R.string.mechanic_symmetry
         Mechanic.MULTIPLE_STARTS_AND_EXITS -> R.string.mechanic_multiple_starts_exits
     }
 )

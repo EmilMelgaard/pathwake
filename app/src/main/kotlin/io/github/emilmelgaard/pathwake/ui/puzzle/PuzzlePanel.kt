@@ -1,0 +1,356 @@
+package io.github.emilmelgaard.pathwake.ui.puzzle
+
+import android.graphics.BlurMaskFilter
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.systemGestureExclusion
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import io.github.emilmelgaard.pathwake.R
+import io.github.emilmelgaard.pathwake.puzzle.PathTracer
+import io.github.emilmelgaard.pathwake.puzzle.Pos
+import io.github.emilmelgaard.pathwake.puzzle.Puzzle
+import io.github.emilmelgaard.pathwake.puzzle.Square
+import io.github.emilmelgaard.pathwake.puzzle.Star
+import io.github.emilmelgaard.pathwake.puzzle.TraceSnapshot
+import io.github.emilmelgaard.pathwake.puzzle.Triangles
+import io.github.emilmelgaard.pathwake.puzzle.Validator
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.sin
+import kotlinx.coroutines.delay
+
+private sealed interface Feedback {
+    val path: List<Pos>
+
+    data class Solved(override val path: List<Pos>) : Feedback
+
+    data class Failed(override val path: List<Pos>, val violations: Set<Pos>) : Feedback
+}
+
+/**
+ * An interactive puzzle. Press the start circle and drag the line to an exit; releasing at the exit checks the line.
+ * Broken rules blink and the line fades; a correct line stays lit and [onSolved] is called with it.
+ *
+ * @param solutionHint if set, drawn faintly behind the line (debug/"show solution").
+ */
+@Composable
+fun PuzzlePanel(
+    puzzle: Puzzle,
+    onSolved: (List<Pos>) -> Unit,
+    modifier: Modifier = Modifier,
+    look: PuzzleLook = PuzzleLook.PANEL,
+    solutionHint: List<Pos>? = null,
+    enabled: Boolean = true
+) {
+    val colors = PuzzleColors.of(look)
+    val tracer = remember(puzzle) { PathTracer(puzzle, PuzzleGeometry.tracerConfig) }
+    var trace by remember(puzzle) { mutableStateOf(TraceSnapshot.EMPTY) }
+    var feedback by remember(puzzle) { mutableStateOf<Feedback?>(null) }
+    val blink = remember { Animatable(0f) }
+    val haptics = LocalHapticFeedback.current
+    val currentOnSolved by rememberUpdatedState(onSolved)
+
+    LaunchedEffect(feedback) {
+        if (feedback is Feedback.Failed) {
+            repeat(3) {
+                blink.animateTo(1f, tween(140))
+                blink.animateTo(0f, tween(140))
+            }
+            delay(500)
+            feedback = null
+        }
+    }
+
+    val description = stringResource(R.string.puzzle_description, puzzle.width, puzzle.height)
+    Canvas(
+        modifier
+            .systemGestureExclusion()
+            .semantics { contentDescription = description }
+            .pointerInput(puzzle, enabled) {
+                if (!enabled) return@pointerInput
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    val geometry = PuzzleGeometry(puzzle, size.width.toFloat(), size.height.toFloat())
+                    val at = geometry.toNodeUnits(down.position)
+                    val touchRadius = max(0.45f, 32.dp.toPx() / geometry.unit)
+                    if (!tracer.begin(at.x, at.y, touchRadius)) {
+                        if (tracer.isActive) {
+                            tracer.clear()
+                            trace = tracer.snapshot()
+                        }
+                        return@awaitEachGesture
+                    }
+                    feedback = null
+                    down.consume()
+                    trace = tracer.snapshot()
+                    haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+                    var nodeCount = tracer.path.size
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                        if (!change.pressed) break
+                        val p = geometry.toNodeUnits(change.position)
+                        tracer.drag(p.x, p.y)
+                        change.consume()
+                        if (tracer.path.size != nodeCount) {
+                            nodeCount = tracer.path.size
+                            haptics.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+                        }
+                        trace = tracer.snapshot()
+                    }
+                    if (tracer.isAtExit) {
+                        val path = tracer.path.toList()
+                        val result = Validator.validate(puzzle, path)
+                        tracer.clear()
+                        trace = tracer.snapshot()
+                        if (result.isValid) {
+                            feedback = Feedback.Solved(path)
+                            haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                            currentOnSolved(path)
+                        } else {
+                            feedback = Feedback.Failed(path, result.violations)
+                            haptics.performHapticFeedback(HapticFeedbackType.Reject)
+                        }
+                    }
+                }
+            }
+    ) {
+        val geometry = PuzzleGeometry(puzzle, size.width, size.height)
+        drawPuzzle(geometry, puzzle, colors, trace, feedback, blink.value, solutionHint)
+    }
+}
+
+private fun DrawScope.drawPuzzle(
+    g: PuzzleGeometry,
+    puzzle: Puzzle,
+    colors: PuzzleColors,
+    trace: TraceSnapshot,
+    feedback: Feedback?,
+    blink: Float,
+    solutionHint: List<Pos>?
+) {
+    val u = g.unit
+    val lineWidth = PuzzleGeometry.LINE_WIDTH * u
+    drawRoundRect(colors.panel, g.panelTopLeft, g.panelSize, CornerRadius(0.3f * u))
+
+    // Track: edges (split around gaps), round joints at nodes, exits and starts.
+    for (y in 0 until puzzle.rows) {
+        for (x in 0 until puzzle.cols) {
+            val p = Pos(x, y)
+            when {
+                p.isNode -> drawCircle(colors.track, lineWidth / 2, g.toPx(p))
+                p.isEdge -> drawEdge(g, p, p in puzzle.gaps, colors.track, lineWidth)
+            }
+        }
+    }
+    for (exit in puzzle.exits) {
+        drawLine(colors.track, g.toPx(exit.node), g.exitEnd(exit.node, exit.direction), lineWidth, StrokeCap.Round)
+    }
+    for (start in puzzle.starts) drawCircle(colors.track, PuzzleGeometry.START_RADIUS * u, g.toPx(start))
+
+    val violations = (feedback as? Feedback.Failed)?.violations.orEmpty()
+    for ((cell, symbol) in puzzle.symbols) {
+        val base = colors.symbol(symbol.color)
+        val color = if (cell in violations) lerp(base, colors.error, blink) else base
+        val center = g.toPx(cell)
+        when (symbol) {
+            is Square -> drawSquare(center, u, color, colors.symbolOutline)
+            is Star -> drawStar(center, u, color, colors.symbolOutline)
+            is Triangles -> drawTriangles(center, u, symbol.count, color)
+        }
+    }
+
+    solutionHint?.let { hint ->
+        drawPath(
+            linePath(g, hint, exitTip(g, puzzle, hint)),
+            colors.line.copy(alpha = 0.35f),
+            style = lineStroke(lineWidth * 0.4f)
+        )
+    }
+
+    // The line: the one being drawn, or the last submitted one while showing feedback.
+    val lineNodes: List<Pos>
+    val tip: Offset?
+    val lineColor: Color
+    when {
+        trace.nodes.isNotEmpty() -> {
+            lineNodes = trace.nodes
+            tip = g.toPx(trace.tipX, trace.tipY)
+            lineColor = colors.line
+        }
+
+        feedback is Feedback.Solved -> {
+            lineNodes = feedback.path
+            tip = exitTip(g, puzzle, feedback.path)
+            lineColor = colors.solvedLine
+        }
+
+        feedback is Feedback.Failed -> {
+            lineNodes = feedback.path
+            tip = exitTip(g, puzzle, feedback.path)
+            lineColor = lerp(colors.line, colors.error, 0.6f + 0.4f * blink)
+        }
+
+        else -> {
+            lineNodes = emptyList()
+            tip = null
+            lineColor = colors.line
+        }
+    }
+    if (lineNodes.isNotEmpty()) {
+        val path = linePath(g, lineNodes, tip)
+        val start = g.toPx(lineNodes.first())
+        val failed = feedback is Feedback.Failed && trace.nodes.isEmpty()
+        val glowColor = if (failed) lineColor else colors.lineGlow
+        drawGlow(path, start, glowColor.copy(alpha = if (feedback is Feedback.Solved) 0.9f else 0.6f), lineWidth, u)
+        drawPath(path, lineColor, style = lineStroke(lineWidth))
+        drawCircle(lineColor, PuzzleGeometry.START_RADIUS * u, start)
+    }
+
+    // Dots go on top so they stay visible on the line.
+    val covered = coveredPositions(lineNodes)
+    for (dot in puzzle.dots) {
+        val base = if (dot in covered) colors.dotOnLine else colors.dot
+        val color = if (dot in violations) lerp(base, colors.error, blink) else base
+        drawPath(hexagonPath(g.toPx(dot), 0.11f * u), color)
+    }
+}
+
+private fun lineStroke(width: Float) = Stroke(width = width, cap = StrokeCap.Round, join = StrokeJoin.Round)
+
+/** Soft blurred halo behind the line. */
+private fun DrawScope.drawGlow(path: Path, start: Offset, color: Color, lineWidth: Float, u: Float) {
+    drawIntoCanvas { canvas ->
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            this.color = color.toArgb()
+            maskFilter = BlurMaskFilter(lineWidth * 0.8f, BlurMaskFilter.Blur.NORMAL)
+            style = android.graphics.Paint.Style.STROKE
+            strokeWidth = lineWidth * 1.5f
+            strokeCap = android.graphics.Paint.Cap.ROUND
+            strokeJoin = android.graphics.Paint.Join.ROUND
+        }
+        canvas.nativeCanvas.drawPath(path.asAndroidPath(), paint)
+        paint.style = android.graphics.Paint.Style.FILL
+        canvas.nativeCanvas.drawCircle(start.x, start.y, PuzzleGeometry.START_RADIUS * u * 1.2f, paint)
+    }
+}
+
+private fun DrawScope.drawEdge(g: PuzzleGeometry, edge: Pos, isGap: Boolean, color: Color, width: Float) {
+    val horizontal = edge.x % 2 == 1
+    val a = if (horizontal) Pos(edge.x - 1, edge.y) else Pos(edge.x, edge.y - 1)
+    val b = if (horizontal) Pos(edge.x + 1, edge.y) else Pos(edge.x, edge.y + 1)
+    val pa = g.toPx(a)
+    val pb = g.toPx(b)
+    if (!isGap) {
+        drawLine(color, pa, pb, width)
+        return
+    }
+    val part = 0.5f - PuzzleGeometry.GAP_WIDTH / 2
+    drawLine(color, pa, pa + (pb - pa) * part, width)
+    drawLine(color, pb, pb + (pa - pb) * part, width)
+}
+
+private fun exitTip(g: PuzzleGeometry, puzzle: Puzzle, path: List<Pos>): Offset? {
+    val last = path.lastOrNull() ?: return null
+    val exit = puzzle.exitAt(last) ?: return null
+    return g.exitEnd(exit.node, exit.direction)
+}
+
+private fun linePath(g: PuzzleGeometry, nodes: List<Pos>, tip: Offset?) = Path().apply {
+    val first = g.toPx(nodes.first())
+    moveTo(first.x, first.y)
+    for (i in 1 until nodes.size) {
+        val p = g.toPx(nodes[i])
+        lineTo(p.x, p.y)
+    }
+    tip?.let { lineTo(it.x, it.y) }
+}
+
+private fun coveredPositions(nodes: List<Pos>): Set<Pos> = buildSet {
+    addAll(nodes)
+    for (i in 1 until nodes.size) add(Pos((nodes[i - 1].x + nodes[i].x) / 2, (nodes[i - 1].y + nodes[i].y) / 2))
+}
+
+private fun DrawScope.drawSquare(center: Offset, u: Float, color: Color, outline: Color?) {
+    val side = 0.34f * u
+    val topLeft = center - Offset(side / 2, side / 2)
+    val radius = CornerRadius(0.09f * u)
+    drawRoundRect(color, topLeft, Size(side, side), radius)
+    outline?.let { drawRoundRect(it, topLeft, Size(side, side), radius, style = Stroke(0.02f * u)) }
+}
+
+private fun DrawScope.drawStar(center: Offset, u: Float, color: Color, outline: Color?) {
+    // Outline of two overlapping squares, one rotated by 45 degrees.
+    val outer = 0.23f * u
+    val inner = outer * 0.7654f
+    val path = Path()
+    for (i in 0 until 16) {
+        val angle = PI / 8 * i - PI / 2
+        val r = if (i % 2 == 0) outer else inner
+        val x = center.x + (r * cos(angle)).toFloat()
+        val y = center.y + (r * sin(angle)).toFloat()
+        if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    }
+    path.close()
+    drawPath(path, color)
+    outline?.let { drawPath(path, it, style = Stroke(0.02f * u)) }
+}
+
+private fun DrawScope.drawTriangles(center: Offset, u: Float, count: Int, color: Color) {
+    val side = 0.17f * u
+    val height = side * 0.866f
+    val spacing = 0.21f * u
+    for (k in 0 until count) {
+        val cx = center.x + (k - (count - 1) / 2f) * spacing
+        val path = Path().apply {
+            moveTo(cx, center.y - height * 2 / 3)
+            lineTo(cx + side / 2, center.y + height / 3)
+            lineTo(cx - side / 2, center.y + height / 3)
+            close()
+        }
+        drawPath(path, color)
+    }
+}
+
+private fun hexagonPath(center: Offset, radius: Float) = Path().apply {
+    for (i in 0 until 6) {
+        val angle = PI / 3 * i
+        val x = center.x + (radius * cos(angle)).toFloat()
+        val y = center.y + (radius * sin(angle)).toFloat()
+        if (i == 0) moveTo(x, y) else lineTo(x, y)
+    }
+    close()
+}

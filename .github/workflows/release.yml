@@ -54,7 +54,7 @@ jobs:
           UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
           UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
         run: >
-          ./gradlew spotlessCheck lintRelease testReleaseUnitTest bundleRelease assembleRelease
+          ./gradlew spotlessCheck lintRelease testReleaseUnitTest :puzzle:test bundleRelease assembleRelease
           -PversionName=${{ steps.version.outputs.name }}
           -PversionCode=${{ steps.version.outputs.code }}
 

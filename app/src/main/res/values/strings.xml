@@ -1,3 +1,36 @@
 <resources>
     <string name="app_name">Pathwake</string>
+
+    <!-- Puzzle -->
+    <string name="puzzle_description">Line puzzle (grid size %1$d × %2$d). Drag the line from a start circle to an exit.</string>
+
+    <!-- Puzzle playground -->
+    <string name="playground_title">Puzzle playground</string>
+    <string name="difficulty">Difficulty</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="difficulty_expert">Expert</string>
+    <string name="difficulty_fiendish">Fiendish</string>
+    <string name="puzzle_look">Look</string>
+    <string name="look_panel">Panel</string>
+    <string name="look_material">Material</string>
+    <string name="new_puzzle">New puzzle</string>
+    <string name="show_solution">Show solution</string>
+    <string name="hide_solution">Hide solution</string>
+    <string name="solved">Solved!</string>
+    <string name="solved_count">Solved so far: %1$d</string>
+    <!-- Example: "5 × 5 · Dots, Squares · 1 solution · generated in 120 ms" -->
+    <string name="puzzle_info">%1$d × %2$d · %3$s · %4$s · generated in %5$d ms</string>
+    <plurals name="solution_count">
+        <item quantity="one">%1$d solution</item>
+        <item quantity="other">%1$d solutions</item>
+    </plurals>
+    <string name="solution_count_unknown">few solutions</string>
+    <string name="mechanic_dots">Dots</string>
+    <string name="mechanic_gaps">Gaps</string>
+    <string name="mechanic_squares">Squares</string>
+    <string name="mechanic_stars">Stars</string>
+    <string name="mechanic_triangles">Triangles</string>
+    <string name="mechanic_multiple_starts_exits">Multiple starts/exits</string>
 </resources>

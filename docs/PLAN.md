@@ -11,7 +11,7 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
 
 | Topic                      | Decision                                                                                                   |
 |----------------------------|------------------------------------------------------------------------------------------------------------|
-| Name                       | **Pathwake** (`io.github.emilmelgaard.pathwake`). Store listing must not use "The Witness" trademark.       |
+| Name                       | **Pathwake** (`io.github.emilmelgaard.pathwake`). The description may say the puzzles are inspired by *The Witness* (revisit if Play objects); the name and art stay original. |
 | Puzzle mechanics           | Dots, broken edges, colored squares, stars, triangles, tetris pieces (fixed + rotatable), subtractive tetris, elimination marks, multiple starts/exits, symmetry |
 | Difficulty                 | Preset levels per alarm (Easy, Medium, Hard, Expert, Fiendish), each mapping to grid size + mechanics      |
 | Puzzles per alarm          | Configurable per alarm (1-10)                                                                              |
@@ -62,12 +62,17 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
 
 Each chunk ends with a demo (screenshots on the tablet and phone emulators), a PR, and a feedback round.
 
-1. **Puzzle engine core and playground**
+1. **Puzzle engine core and playground** *(in review)*
    - `:puzzle` module: model, validator, generator, solver and tracer for dots, gaps, colored squares, stars,
      triangles, and multiple starts/exits.
    - Puzzle panel UI with touch drawing, success/failure feedback, both looks.
    - A temporary "Puzzle playground" home screen: pick a difficulty, generate a new puzzle, toggle the look.
    - *Feedback on:* drawing feel, visuals, puzzle variety.
+   - Status:
+     - Generation: on desktop, Easy and Medium take under ~100 ms; Hard to Fiendish average 150-175 ms (max ~0.5 s).
+       Each run is capped at 2.5M solver steps.
+     - Easy and Medium solution counts are exact. For larger puzzles where uniqueness can't be proven within budget,
+       the generator accepts the puzzle once randomized probes find no alternative solution ("few solutions").
 2. **Advanced mechanics and difficulty calibration**
    - Tetris (fixed/rotatable), subtractive tetris, elimination, symmetry.
    - Solver-checked generation, 5 calibrated presets, generation-time budget on low-end devices.

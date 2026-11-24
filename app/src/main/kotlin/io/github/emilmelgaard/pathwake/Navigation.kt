@@ -1,27 +1,20 @@
 package io.github.emilmelgaard.pathwake
 
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
-import io.github.emilmelgaard.pathwake.ui.main.MainScreen
+import io.github.emilmelgaard.pathwake.ui.playground.PlaygroundScreen
 
 @Composable
 fun MainNavigation() {
-    val backStack = rememberNavBackStack(Main)
+    val backStack = rememberNavBackStack(Playground)
 
     NavDisplay(
         backStack = backStack,
         onBack = { backStack.removeLastOrNull() },
-        entryProvider =
-            entryProvider {
-                entry<Main> {
-                    MainScreen(onItemClick = { navKey -> backStack.add(navKey) })
-                }
-            }
+        entryProvider = entryProvider {
+            entry<Playground> { PlaygroundScreen() }
+        }
     )
 }

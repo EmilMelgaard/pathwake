@@ -29,7 +29,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       - name: Check formatting, lint, test and build
-        run: ./gradlew spotlessCheck lintDebug testDebugUnitTest assembleDebug assembleRelease
+        run: ./gradlew spotlessCheck lintDebug testDebugUnitTest :puzzle:test assembleDebug assembleRelease
 
       - name: Upload reports
         if: always()

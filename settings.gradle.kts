@@ -33,3 +33,4 @@ plugins {
 rootProject.name = "Pathwake"
 
 include(":app")
+include(":puzzle")

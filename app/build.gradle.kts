@@ -78,6 +78,8 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":puzzle"))
+
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
     androidTestImplementation(composeBom)

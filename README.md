@@ -1,7 +1,9 @@
 # Pathwake
 
-An alarm clock for tablets and phones that you can only turn off by solving randomly generated line-drawing puzzles.
-No snooze.
+An alarm clock for tablets and phones that you can only turn off by solving randomly generated line-drawing puzzles,
+inspired by the panels in *The Witness*. No snooze.
+
+Pathwake is an independent fan project and is not affiliated with or endorsed by the makers of *The Witness*.
 
 [![CI](https://github.com/EmilMelgaard/pathwake/actions/workflows/ci.yml/badge.svg)](https://github.com/EmilMelgaard/pathwake/actions/workflows/ci.yml)
 
@@ -21,7 +23,7 @@ Requirements: JDK 21 and the Android SDK (Android Studio installs both).
 ./gradlew assembleDebug            # build a debug APK
 ./gradlew installDebug             # install on a connected device/emulator
 ./gradlew spotlessApply            # format code (ktlint)
-./gradlew spotlessCheck lintDebug testDebugUnitTest   # what CI checks
+./gradlew spotlessCheck lintDebug testDebugUnitTest :puzzle:test   # what CI checks
 ./gradlew connectedDebugAndroidTest                   # instrumented tests (needs a device)
 ```
 

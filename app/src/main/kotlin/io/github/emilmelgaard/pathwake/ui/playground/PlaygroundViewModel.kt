@@ -29,12 +29,13 @@ data class PlaygroundUiState(
     val showSolution: Boolean = false
 )
 
-/** Temporary home screen for trying out generated puzzles (chunk 1 of the plan). */
+/** Lets the user try generated puzzles outside of an alarm. */
 class PlaygroundViewModel(
+    initialDifficulty: Difficulty = Difficulty.MEDIUM,
     private val generatorDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val nextSeed: () -> Long = { Random.nextLong() }
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(PlaygroundUiState())
+    private val _uiState = MutableStateFlow(PlaygroundUiState(difficulty = initialDifficulty))
     val uiState: StateFlow<PlaygroundUiState> = _uiState.asStateFlow()
 
     private var generation: Job? = null

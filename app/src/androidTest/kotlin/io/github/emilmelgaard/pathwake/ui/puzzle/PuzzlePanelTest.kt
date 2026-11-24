@@ -14,6 +14,7 @@ import io.github.emilmelgaard.pathwake.puzzle.Pos
 import io.github.emilmelgaard.pathwake.puzzle.Puzzle
 import io.github.emilmelgaard.pathwake.puzzle.Square
 import io.github.emilmelgaard.pathwake.puzzle.SymbolColor
+import io.github.emilmelgaard.pathwake.puzzle.Symmetry
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -34,25 +35,39 @@ class PuzzlePanelTest {
     private val staircase = listOf(Pos(0, 4), Pos(2, 4), Pos(2, 2), Pos(4, 2), Pos(4, 0))
     private val alongBorder = listOf(Pos(0, 4), Pos(0, 2), Pos(0, 0), Pos(2, 0), Pos(4, 0))
 
-    private fun drawLine(path: List<Pos>): List<Pos>? {
+    // 4x2 cells mirrored left-right: starts at the bottom corners, exits pointing up at x = 1 and x = 3 (node units).
+    private val symmetric = Puzzle(
+        width = 4,
+        height = 2,
+        starts = setOf(Pos(0, 4), Pos(8, 4)),
+        exits = listOf(Exit(Pos(2, 0), Direction.UP), Exit(Pos(6, 0), Direction.UP)),
+        dots = setOf(Pos(8, 2)),
+        symmetry = Symmetry.HORIZONTAL
+    )
+    private val leftLine = listOf(Pos(0, 4), Pos(0, 2), Pos(0, 0), Pos(2, 0))
+    private val rightLine = listOf(Pos(8, 4), Pos(8, 2), Pos(8, 0), Pos(6, 0))
+
+    private fun drawLine(path: List<Pos>, onPuzzle: Puzzle = puzzle): List<Pos>? {
         var solved: List<Pos>? = null
         rule.setContent {
-            PuzzlePanel(puzzle, onSolved = { solved = it }, modifier = Modifier.size(320.dp).testTag("panel"))
+            PuzzlePanel(onPuzzle, onSolved = { solved = it }, modifier = Modifier.size(320.dp).testTag("panel"))
         }
-        rule.onNodeWithTag("panel").performTouchInput { drag(path) }
+        rule.onNodeWithTag("panel").performTouchInput { drag(onPuzzle, path) }
         rule.waitForIdle()
         return solved
     }
 
-    private fun TouchInjectionScope.drag(path: List<Pos>) {
-        val geometry = PuzzleGeometry(puzzle, width.toFloat(), height.toFloat())
+    private fun TouchInjectionScope.drag(onPuzzle: Puzzle, path: List<Pos>) {
+        val geometry = PuzzleGeometry(onPuzzle, width.toFloat(), height.toFloat())
         down(geometry.toPx(path.first()))
         for (i in 1 until path.size) {
             val from = geometry.toPx(path[i - 1])
             val to = geometry.toPx(path[i])
             for (step in 1..5) moveTo(from + (to - from) * (step / 5f))
         }
-        moveTo(geometry.exitEnd(path.last(), Direction.RIGHT) + androidx.compose.ui.geometry.Offset(10f, 0f))
+        val exit = onPuzzle.exitAt(path.last())!!
+        val end = geometry.exitEnd(exit.node, exit.direction)
+        moveTo(end + (end - geometry.toPx(exit.node)) * 0.5f)
         up()
     }
 
@@ -64,5 +79,15 @@ class PuzzlePanelTest {
     @Test
     fun drawingAWrongLine_doesNotSolve() {
         assertNull(drawLine(alongBorder))
+    }
+
+    @Test
+    fun symmetryPuzzle_solvedFromTheLeftStart() {
+        assertEquals(leftLine, drawLine(leftLine, symmetric))
+    }
+
+    @Test
+    fun symmetryPuzzle_solvedFromTheRightStart() {
+        assertEquals(rightLine, drawLine(rightLine, symmetric))
     }
 }

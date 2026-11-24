@@ -1,4 +1,4 @@
-package io.github.emilmelgaard.witnessalarm
+package io.github.emilmelgaard.pathwake
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import io.github.emilmelgaard.witnessalarm.ui.theme.WitnessAlarmTheme
+import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -16,7 +16,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            WitnessAlarmTheme {
+            PathwakeTheme {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainNavigation()
                 }

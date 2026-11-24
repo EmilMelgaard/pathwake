@@ -1,4 +1,4 @@
-package io.github.emilmelgaard.witnessalarm.data
+package io.github.emilmelgaard.pathwake.data
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow

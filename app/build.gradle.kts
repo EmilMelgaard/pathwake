@@ -11,7 +11,7 @@ fun secret(name: String): String? = providers.environmentVariable(name).orElse(p
 val uploadKeystoreFile = secret("UPLOAD_KEYSTORE_FILE")
 
 android {
-    namespace = "io.github.emilmelgaard.witnessalarm"
+    namespace = "io.github.emilmelgaard.pathwake"
     compileSdk {
         version =
             release(37) {
@@ -19,7 +19,7 @@ android {
             }
     }
     defaultConfig {
-        applicationId = "io.github.emilmelgaard.witnessalarm"
+        applicationId = "io.github.emilmelgaard.pathwake"
         minSdk = 29
         targetSdk = 37
         // Overridden by CI from the git tag, e.g. -PversionName=1.2.3 -PversionCode=10203

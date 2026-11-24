@@ -61,8 +61,8 @@ jobs:
       - name: Rename artifacts
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/release/app-release.apk "dist/witness-alarm-${{ steps.version.outputs.name }}.apk"
-          cp app/build/outputs/bundle/release/app-release.aab "dist/witness-alarm-${{ steps.version.outputs.name }}.aab"
+          cp app/build/outputs/apk/release/app-release.apk "dist/pathwake-${{ steps.version.outputs.name }}.apk"
+          cp app/build/outputs/bundle/release/app-release.aab "dist/pathwake-${{ steps.version.outputs.name }}.aab"
 
       # The very first Play upload must be done manually in Play Console; grab the AAB from here.
       - name: Upload AAB and R8 mapping
@@ -78,8 +78,8 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: io.github.emilmelgaard.witnessalarm
-          releaseFiles: dist/witness-alarm-${{ steps.version.outputs.name }}.aab
+          packageName: io.github.emilmelgaard.pathwake
+          releaseFiles: dist/pathwake-${{ steps.version.outputs.name }}.aab
           releaseName: ${{ steps.version.outputs.name }}
           track: ${{ vars.PLAY_TRACK || 'internal' }}
           # Must be 'draft' until the app has been published once on Play.
@@ -89,5 +89,5 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v3
         with:
-          files: dist/witness-alarm-${{ steps.version.outputs.name }}.apk
+          files: dist/pathwake-${{ steps.version.outputs.name }}.apk
           generate_release_notes: true

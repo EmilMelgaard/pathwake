@@ -1,4 +1,4 @@
-package io.github.emilmelgaard.witnessalarm.ui.main
+package io.github.emilmelgaard.pathwake.ui.main
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,9 +23,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
-import io.github.emilmelgaard.witnessalarm.R
-import io.github.emilmelgaard.witnessalarm.data.DefaultDataRepository
-import io.github.emilmelgaard.witnessalarm.ui.theme.WitnessAlarmTheme
+import io.github.emilmelgaard.pathwake.R
+import io.github.emilmelgaard.pathwake.data.DefaultDataRepository
+import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
 
 @Composable
 fun MainScreen(
@@ -101,5 +101,5 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun MainScreenPreview() {
-    WitnessAlarmTheme { MainScreen(listOf("Android")) }
+    PathwakeTheme { MainScreen(listOf("Android")) }
 }

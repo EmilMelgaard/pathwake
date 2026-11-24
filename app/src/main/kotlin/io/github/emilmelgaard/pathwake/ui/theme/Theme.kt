@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.emilmelgaard.witnessalarm.ui.theme
+package io.github.emilmelgaard.pathwake.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -41,7 +41,7 @@ private val LightColorScheme = lightColorScheme(
 )
 
 @Composable
-fun WitnessAlarmTheme(
+fun PathwakeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,

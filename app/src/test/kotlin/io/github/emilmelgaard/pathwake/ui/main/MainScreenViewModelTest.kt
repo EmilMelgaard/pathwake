@@ -1,6 +1,6 @@
-package io.github.emilmelgaard.witnessalarm.ui.main
+package io.github.emilmelgaard.pathwake.ui.main
 
-import io.github.emilmelgaard.witnessalarm.data.DataRepository
+import io.github.emilmelgaard.pathwake.data.DataRepository
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first

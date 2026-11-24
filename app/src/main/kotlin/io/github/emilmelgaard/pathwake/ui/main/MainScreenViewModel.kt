@@ -1,9 +1,9 @@
-package io.github.emilmelgaard.witnessalarm.ui.main
+package io.github.emilmelgaard.pathwake.ui.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.emilmelgaard.witnessalarm.data.DataRepository
-import io.github.emilmelgaard.witnessalarm.ui.main.MainScreenUiState.Success
+import io.github.emilmelgaard.pathwake.data.DataRepository
+import io.github.emilmelgaard.pathwake.ui.main.MainScreenUiState.Success
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch

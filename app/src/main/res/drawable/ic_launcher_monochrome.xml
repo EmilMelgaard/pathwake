@@ -5,13 +5,13 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Moved up so the whole clock (bells to feet) is centered, and scaled to stay in the safe zone. -->
+    <!-- Moved up so the puzzle grid is centered, and scaled to keep the bells in the safe zone. -->
     <group
         android:pivotX="54"
         android:pivotY="54"
         android:scaleX="0.94"
         android:scaleY="0.94"
-        android:translateY="-4.37">
+        android:translateY="-3.76">
         <!-- Bells and feet -->
         <path
             android:fillColor="#B3000000"

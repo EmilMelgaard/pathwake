@@ -159,8 +159,13 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
 6. **Polish** *(in review)*
    - App icon, edge cases (overlapping alarms, phone call while ringing), accessibility and color-blind pass.
    - Decisions:
-     - Icon: an original panel (slate, like the Panel look) with a 3×3 grid and a lit line rising like stairs from the
-       start circle to the exit. Adaptive with a monochrome layer for themed icons.
+     - Icon: an alarm clock (bells, feet) whose face is a puzzle panel (4×4 grid, Panel colors). The lit line runs
+       from the start circle at 9 o'clock to the center and up to the exit at 12, so it is also the clock's hands.
+       Adaptive with a monochrome layer for themed icons.
+     - Test alarm (alarm menu and editor, which tests the unsaved settings): rings now like the real alarm (sound,
+       vibration, volume settings, puzzles) with a Cancel button. A test doesn't change the alarm, leaves no
+       notifications and isn't resumed after a restart; a real alarm that comes due replaces it, and a ringing real
+       alarm can't be tested over.
      - Phone calls: while a call rings or is active (also VoIP), the alarm plays at 1/8 volume, like the stock clock's
        in-call alarm, and keeps vibrating. When the call ends it is loud again and takes the audio focus back.
      - Backup: Auto Backup keeps alarms and settings only. Custom sound files only move with a device-to-device

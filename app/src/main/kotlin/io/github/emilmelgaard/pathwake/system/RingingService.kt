@@ -91,7 +91,12 @@ class RingingService : Service() {
             val now = Instant.now()
             val silenceAt = listOfNotNull(session.silenceAt, soundEndedAt).minOrNull()
             if (silenceAt != null && !now.isBefore(silenceAt)) {
-                container.notifications.showSilenced(session, Duration.between(session.startedAt, now))
+                if (!session.test) {
+                    container.notifications.showSilenced(
+                        session,
+                        Duration.between(session.startedAt, now)
+                    )
+                }
                 container.ringing.stop()
                 break
             }

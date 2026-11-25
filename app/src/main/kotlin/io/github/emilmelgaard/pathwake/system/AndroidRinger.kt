@@ -25,9 +25,24 @@ class AndroidRinger(
         if (controller.session.value != null) startService()
     }
 
+    /**
+     * Rings [alarm] as a test, unless a real alarm is ringing. Must run while the app is in the foreground, which
+     * also opens the puzzles (the notification only pops up over an unlocked screen). Returns whether it rings.
+     */
+    fun test(alarm: Alarm, at: ZonedDateTime): Boolean {
+        if (!controller.test(alarm, at)) return false
+        startService()
+        return true
+    }
+
     override fun isInterrupted(now: ZonedDateTime): Boolean {
         val session = controller.session.value ?: return false
         if (RingingService.isRunning) return false
+        // A test cut off by a restart is over.
+        if (session.test) {
+            controller.cancelTest()
+            return false
+        }
         val silenceAt = session.silenceAt
         if (silenceAt != null && !silenceAt.isAfter(now.toInstant())) {
             notifications.showSilenced(session, Duration.between(session.startedAt, silenceAt))

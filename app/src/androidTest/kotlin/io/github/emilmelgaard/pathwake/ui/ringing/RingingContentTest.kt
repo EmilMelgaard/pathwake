@@ -70,4 +70,29 @@ class RingingContentTest {
         rule.onNodeWithText("Solved!").assertExists()
         rule.onNodeWithText("New puzzle").assertIsNotEnabled()
     }
+
+    @Test
+    fun test_canBeCancelled_butARealAlarmCanNot() {
+        var cancelled = 0
+        rule.setContent {
+            PathwakeTheme(darkTheme = true) {
+                RingingContent(
+                    RingingUiState(session.copy(test = true), generated),
+                    LocalTime.of(7, 1),
+                    onSolved = {},
+                    onNewPuzzle = {},
+                    onCancelTest = { cancelled++ }
+                )
+            }
+        }
+        rule.onNodeWithText("Test").assertExists()
+        rule.onNodeWithText("Cancel").performClick()
+        assertEquals(1, cancelled)
+    }
+
+    @Test
+    fun realAlarm_hasNoCancelButton() {
+        show(RingingUiState(session, generated))
+        rule.onNodeWithText("Cancel").assertDoesNotExist()
+    }
 }

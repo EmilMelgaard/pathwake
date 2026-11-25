@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -120,6 +121,7 @@ import io.github.emilmelgaard.pathwake.ui.common.formatTime
 import io.github.emilmelgaard.pathwake.ui.common.formatWhen
 import io.github.emilmelgaard.pathwake.ui.common.orderedWeek
 import io.github.emilmelgaard.pathwake.ui.common.soundTitle
+import io.github.emilmelgaard.pathwake.ui.ringing.RingingActivity
 import io.github.emilmelgaard.pathwake.ui.sound.SoundPickerDialog
 import java.time.DayOfWeek
 import java.time.Instant
@@ -134,6 +136,7 @@ data class AlarmEditorActions(
     val onSave: () -> Unit = {},
     val onDelete: () -> Unit = {},
     val onTryPuzzle: (Difficulty) -> Unit = {},
+    val onTest: () -> Unit = {},
     val onTimeChange: (LocalTime) -> Unit = {},
     val onLabelChange: (String) -> Unit = {},
     val onToggleDay: (DayOfWeek) -> Unit = {},
@@ -210,6 +213,11 @@ fun AlarmEditorScreen(
                 }
             },
             onTryPuzzle = onTryPuzzle,
+            onTest = {
+                // Tests what is in the editor, saved or not.
+                container.testAlarm(state.alarm)
+                context.startActivity(RingingActivity.intent(context))
+            },
             onTimeChange = viewModel::setTime,
             onLabelChange = viewModel::setLabel,
             onToggleDay = viewModel::toggleDay,
@@ -591,6 +599,10 @@ private fun RingingSection(alarm: Alarm, actions: AlarmEditorActions) {
             supportingText = stringResource(R.string.auto_silence_hint),
             modifier = Modifier.fillMaxWidth().testTag(AUTO_SILENCE_TAG)
         )
+        OutlinedButton(onClick = actions.onTest) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = null, Modifier.size(18.dp))
+            Text(stringResource(R.string.test_alarm_action), modifier = Modifier.padding(start = 8.dp))
+        }
     }
     if (picking) {
         SoundPickerDialog(

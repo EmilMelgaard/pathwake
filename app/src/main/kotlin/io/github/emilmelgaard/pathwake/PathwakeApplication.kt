@@ -3,6 +3,7 @@ package io.github.emilmelgaard.pathwake
 import android.app.Application
 import android.content.Context
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import io.github.emilmelgaard.pathwake.alarm.Alarm
 import io.github.emilmelgaard.pathwake.alarm.AlarmScheduler
 import io.github.emilmelgaard.pathwake.alarm.AlarmSound
 import io.github.emilmelgaard.pathwake.data.AlarmRepository
@@ -57,6 +58,9 @@ class AppContainer(context: Context) {
 
     /** Alarms for the UI. Changes reschedule the platform alarm. */
     val alarmRepository: AlarmRepository by lazy { SchedulingAlarmRepository(storedAlarms, scheduler) }
+
+    /** Rings [alarm] now to try it out, unless a real alarm is ringing; open the ringing screen after this. */
+    fun testAlarm(alarm: Alarm): Boolean = ringer.test(alarm, now())
 
     /** Removes a sound file from the library; alarms (and the default for new alarms) that used it play the default. */
     suspend fun deleteSound(sound: AlarmSound.Custom) {

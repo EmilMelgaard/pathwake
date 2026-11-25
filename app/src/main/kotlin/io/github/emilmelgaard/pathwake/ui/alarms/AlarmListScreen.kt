@@ -83,6 +83,7 @@ data class AlarmListActions(
     val onSkipNext: (Alarm) -> Unit = {},
     val onCancelSkip: (Alarm) -> Unit = {},
     val onDuplicate: (Alarm) -> Unit = {},
+    val onTest: (Alarm) -> Unit = {},
     val onDelete: (Alarm) -> Unit = {},
     val onOpenRinging: () -> Unit = {},
     val onFixPermission: (AlarmPermission) -> Unit = {}
@@ -162,6 +163,10 @@ fun AlarmListScreen(
             onSkipNext = viewModel::skipNext,
             onCancelSkip = viewModel::cancelSkip,
             onDuplicate = viewModel::duplicate,
+            onTest = { alarm ->
+                container.testAlarm(alarm)
+                context.startActivity(RingingActivity.intent(context))
+            },
             onDelete = { alarm ->
                 viewModel.delete(alarm)
                 onAlarmDeleted(alarm.id)
@@ -413,6 +418,13 @@ private fun AlarmMenu(item: AlarmListItem, actions: AlarmListActions) {
                     )
                 }
             }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.test_alarm_action)) },
+                onClick = {
+                    expanded = false
+                    actions.onTest(alarm)
+                }
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.duplicate)) },
                 onClick = {

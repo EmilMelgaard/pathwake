@@ -32,10 +32,27 @@ class RingingController(
         _lastInteraction.value = at
     }
 
-    /** Starts ringing [alarms], or adds them to the alarm that is already ringing. */
+    /** Starts ringing [alarms], or adds them to the alarm that is already ringing. They replace a test. */
     fun ring(alarms: List<Alarm>, at: ZonedDateTime) = update { current ->
-        current?.join(alarms, at) ?: RingingSession.start(alarms, at, newSeed())
+        current?.takeUnless { it.test }?.join(alarms, at) ?: RingingSession.start(alarms, at, newSeed())
     }
+
+    /** Rings [alarm] as a test (replacing another test), unless a real alarm is ringing. Returns whether it does. */
+    fun test(alarm: Alarm, at: ZonedDateTime): Boolean {
+        var started = false
+        update { current ->
+            if (current != null && !current.test) {
+                current
+            } else {
+                started = true
+                RingingSession.start(listOf(alarm), at, newSeed()).copy(test = true)
+            }
+        }
+        return started
+    }
+
+    /** Stops a test; real alarms only stop when solved or silenced. */
+    fun cancelTest() = update { current -> current?.takeUnless { it.test } }
 
     /**
      * Puzzle [puzzleNumber] was solved: moves on to the next puzzle, or stops ringing after the last one.

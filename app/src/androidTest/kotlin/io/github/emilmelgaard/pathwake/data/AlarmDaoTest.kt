@@ -3,6 +3,8 @@ package io.github.emilmelgaard.pathwake.data
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import io.github.emilmelgaard.pathwake.alarm.Alarm
+import io.github.emilmelgaard.pathwake.alarm.AlarmSound
+import io.github.emilmelgaard.pathwake.alarm.AutoSilence
 import io.github.emilmelgaard.pathwake.alarm.DateRange
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import java.time.DayOfWeek
@@ -45,9 +47,16 @@ class AlarmDaoTest {
             skippedDate = LocalDate.of(2026, 11, 30),
             difficulty = Difficulty.BRUTAL,
             puzzleCount = 3,
-            autoSilenceMinutes = null
+            autoSilence = AutoSilence.Never,
+            sound = AlarmSound.Custom("1700000000000_Birds.mp3", "Birds"),
+            vibrate = false
         )
-        val oneTime = Alarm(time = LocalTime.of(23, 59), date = LocalDate.of(2027, 3, 1), autoSilenceMinutes = 5)
+        val oneTime = Alarm(
+            time = LocalTime.of(23, 59),
+            date = LocalDate.of(2027, 3, 1),
+            autoSilence = AutoSilence.WhenSoundEnds,
+            sound = AlarmSound.Tone("content://media/internal/audio/media/9", "Cesium")
+        )
 
         val id = repository.save(alarm)
         val oneTimeId = repository.save(oneTime)

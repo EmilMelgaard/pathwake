@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.datastore.preferences)
     androidTestImplementation(libs.androidx.room.testing)
 
     val composeBom = platform(libs.androidx.compose.bom)

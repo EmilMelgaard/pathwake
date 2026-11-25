@@ -26,6 +26,7 @@ import io.github.emilmelgaard.pathwake.ui.common.Messenger
 import io.github.emilmelgaard.pathwake.ui.common.UnsavedChangesGuard
 import io.github.emilmelgaard.pathwake.ui.editor.AlarmEditorScreen
 import io.github.emilmelgaard.pathwake.ui.playground.PlaygroundScreen
+import io.github.emilmelgaard.pathwake.ui.settings.SettingsScreen
 
 /**
  * The alarm list with the editor as its detail: side by side on large screens, one at a time on small ones.
@@ -72,6 +73,7 @@ fun MainNavigation() {
                         onOpenAlarm = ::openEditor,
                         onAddAlarm = { openEditor(AlarmEditor.NEW) },
                         onOpenPlayground = { backStack.add(Playground()) },
+                        onOpenSettings = { backStack.add(Settings) },
                         onAlarmDeleted = { closeEditor(AlarmEditor(it)) }
                     )
                 }
@@ -85,6 +87,7 @@ fun MainNavigation() {
                 entry<Playground> { key ->
                     PlaygroundScreen(initialDifficulty = key.difficulty, onBack = { backStack.remove(key) })
                 }
+                entry<Settings> { SettingsScreen(onBack = { backStack.remove(Settings) }) }
             }
         )
         if (guard.pending != null) {

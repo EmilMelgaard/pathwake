@@ -4,6 +4,8 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import io.github.emilmelgaard.pathwake.alarm.Alarm
+import io.github.emilmelgaard.pathwake.alarm.AlarmSound
+import io.github.emilmelgaard.pathwake.alarm.AutoSilence
 import io.github.emilmelgaard.pathwake.alarm.DateRange
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import java.time.DayOfWeek
@@ -25,8 +27,12 @@ data class AlarmEntity(
     @ColumnInfo(name = "skipped_epoch_day") val skippedEpochDay: Long?,
     val difficulty: String,
     @ColumnInfo(name = "puzzle_count") val puzzleCount: Int,
-    /** Null: never auto-silence. */
-    @ColumnInfo(name = "auto_silence_minutes", defaultValue = "10") val autoSilenceMinutes: Int?
+    /** Null: never; 0: when the sound ends; otherwise minutes. */
+    @ColumnInfo(name = "auto_silence_minutes", defaultValue = "10") val autoSilenceMinutes: Int?,
+    /** See [AlarmSound.key]. */
+    @ColumnInfo(defaultValue = "default") val sound: String,
+    @ColumnInfo(name = "sound_title") val soundTitle: String?,
+    @ColumnInfo(defaultValue = "1") val vibrate: Boolean
 )
 
 fun Alarm.toEntity() = AlarmEntity(
@@ -41,7 +47,14 @@ fun Alarm.toEntity() = AlarmEntity(
     skippedEpochDay = skippedDate?.toEpochDay(),
     difficulty = difficulty.name,
     puzzleCount = puzzleCount,
-    autoSilenceMinutes = autoSilenceMinutes
+    autoSilenceMinutes = when (val silence = autoSilence) {
+        AutoSilence.Never -> null
+        AutoSilence.WhenSoundEnds -> 0
+        is AutoSilence.After -> silence.minutes
+    },
+    sound = sound.key,
+    soundTitle = sound.title,
+    vibrate = vibrate
 )
 
 fun AlarmEntity.toAlarm() = Alarm(
@@ -55,7 +68,13 @@ fun AlarmEntity.toAlarm() = Alarm(
     skippedDate = skippedEpochDay?.let(LocalDate::ofEpochDay),
     difficulty = difficultyOf(difficulty) ?: Difficulty.MEDIUM,
     puzzleCount = puzzleCount.coerceIn(1, Alarm.MAX_PUZZLES),
-    autoSilenceMinutes = autoSilenceMinutes?.takeIf { it > 0 }
+    autoSilence = when {
+        autoSilenceMinutes == null -> AutoSilence.Never
+        autoSilenceMinutes <= 0 -> AutoSilence.WhenSoundEnds
+        else -> AutoSilence.After(autoSilenceMinutes)
+    },
+    sound = AlarmSound.parse(sound, soundTitle),
+    vibrate = vibrate
 )
 
 private fun parseRange(text: String): DateRange? = runCatching {

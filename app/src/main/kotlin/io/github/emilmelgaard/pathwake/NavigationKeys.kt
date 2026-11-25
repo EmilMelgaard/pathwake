@@ -17,3 +17,6 @@ data class AlarmEditor(val alarmId: Long = NEW) : NavKey {
 
 @Serializable
 data class Playground(val difficulty: Difficulty = Difficulty.MEDIUM) : NavKey
+
+@Serializable
+data object Settings : NavKey

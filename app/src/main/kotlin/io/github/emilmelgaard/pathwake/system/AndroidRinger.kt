@@ -7,6 +7,7 @@ import io.github.emilmelgaard.pathwake.alarm.Alarm
 import io.github.emilmelgaard.pathwake.alarm.Occurrence
 import io.github.emilmelgaard.pathwake.alarm.Ringer
 import io.github.emilmelgaard.pathwake.ring.RingingController
+import java.time.Duration
 import java.time.ZonedDateTime
 
 class AndroidRinger(
@@ -27,8 +28,9 @@ class AndroidRinger(
     override fun isInterrupted(now: ZonedDateTime): Boolean {
         val session = controller.session.value ?: return false
         if (RingingService.isRunning) return false
-        if (session.silenceAt?.isAfter(now.toInstant()) == false) {
-            notifications.showSilenced(session)
+        val silenceAt = session.silenceAt
+        if (silenceAt != null && !silenceAt.isAfter(now.toInstant())) {
+            notifications.showSilenced(session, Duration.between(session.startedAt, silenceAt))
             controller.stop()
             return false
         }

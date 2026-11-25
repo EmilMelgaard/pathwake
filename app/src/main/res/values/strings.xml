@@ -14,6 +14,7 @@
     <string name="difficulty_expert">Expert</string>
     <string name="difficulty_brutal">Brutal</string>
     <string name="puzzle_look">Look</string>
+    <string name="puzzle_look_setting">Puzzle look</string>
     <string name="look_panel">Panel</string>
     <string name="look_material">Material</string>
     <string name="new_puzzle">New puzzle</string>
@@ -119,6 +120,7 @@
     <string name="auto_silence">Stop ringing</string>
     <string name="auto_silence_hint">If the puzzles aren\'t solved by then</string>
     <string name="auto_silence_never">Never</string>
+    <string name="auto_silence_sound_ends">When the sound ends</string>
     <plurals name="auto_silence_after">
         <item quantity="one">After %1$d minute</item>
         <item quantity="other">After %1$d minutes</item>
@@ -151,6 +153,10 @@
         <item quantity="one">%1$s stopped ringing after %2$d minute</item>
         <item quantity="other">%1$s stopped ringing after %2$d minutes</item>
     </plurals>
+    <plurals name="missed_silenced_seconds">
+        <item quantity="one">%1$s stopped ringing after %2$d second</item>
+        <item quantity="other">%1$s stopped ringing after %2$d seconds</item>
+    </plurals>
 
     <!-- Permissions -->
     <string name="permissions_title">Alarms might not work</string>
@@ -159,4 +165,58 @@
     <string name="permission_full_screen">Allow full-screen notifications, so the puzzles appear when the device is locked.</string>
     <string name="allow">Allow</string>
     <string name="open_settings">Open settings</string>
+
+    <!-- Sounds -->
+    <string name="sound">Sound</string>
+    <string name="vibrate">Vibrate</string>
+    <string name="sound_default">Default alarm sound</string>
+    <string name="sound_silent">Silent</string>
+    <string name="your_sounds">Your sounds</string>
+    <string name="device_tones">Alarm tones</string>
+    <string name="add_sound_file">Add a sound file</string>
+    <!-- Content description of the delete button next to a sound. Example: "Delete Birds" -->
+    <string name="delete_sound">Delete %1$s</string>
+    <string name="sound_too_large">This file is too large (at most 30 MB).</string>
+    <string name="sound_add_failed">This file couldn\'t be added.</string>
+
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="alarm_volume">Alarm volume</string>
+    <string name="alarm_volume_hint">The device\'s alarm volume, which all alarms ring at.</string>
+    <string name="test_sound">Test</string>
+    <string name="stop_test">Stop</string>
+    <string name="alarm_volume_muted">The alarm volume is off, so alarms will be silent.</string>
+    <string name="crescendo">Gradually increase volume</string>
+    <string name="off">Off</string>
+    <plurals name="seconds">
+        <item quantity="one">%1$d second</item>
+        <item quantity="other">%1$d seconds</item>
+    </plurals>
+    <plurals name="minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <string name="solving_volume">Volume while solving</string>
+    <string name="solving_volume_hint">Back to full volume after 10 seconds without touching the puzzle</string>
+    <string name="solving_volume_full">Full</string>
+    <string name="solving_volume_lower">Lower while drawing</string>
+    <string name="solving_volume_mute">Mute while drawing</string>
+    <string name="lock_volume_buttons">Keep ringing alarms loud</string>
+    <string name="lock_volume_buttons_hint">Volume buttons can\'t turn down a ringing alarm</string>
+    <string name="new_alarms">New alarms</string>
+    <string name="appearance">Appearance</string>
+    <string name="theme">Theme</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="dynamic_color">Dynamic color</string>
+    <string name="dynamic_color_hint">Use colors from your wallpaper</string>
+    <string name="first_day_of_week">First day of the week</string>
+    <!-- Example: "Language default (Monday)" -->
+    <string name="first_day_locale">Language default (%1$s)</string>
+    <string name="about">About</string>
+    <!-- Example: "Version 0.1.0" -->
+    <string name="version">Version %1$s</string>
+    <string name="source_code">Source code</string>
+    <string name="about_text">Pathwake is open source (Apache License 2.0). The puzzles are inspired by The Witness; Pathwake is not affiliated with its makers.</string>
 </resources>

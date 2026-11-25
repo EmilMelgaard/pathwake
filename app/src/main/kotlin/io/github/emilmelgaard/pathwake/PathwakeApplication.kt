@@ -2,22 +2,28 @@ package io.github.emilmelgaard.pathwake
 
 import android.app.Application
 import android.content.Context
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import io.github.emilmelgaard.pathwake.alarm.AlarmScheduler
+import io.github.emilmelgaard.pathwake.alarm.AlarmSound
 import io.github.emilmelgaard.pathwake.data.AlarmRepository
 import io.github.emilmelgaard.pathwake.data.PathwakeDatabase
 import io.github.emilmelgaard.pathwake.data.RoomAlarmRepository
 import io.github.emilmelgaard.pathwake.data.SchedulingAlarmRepository
 import io.github.emilmelgaard.pathwake.ring.RingingController
+import io.github.emilmelgaard.pathwake.settings.SettingsRepository
 import io.github.emilmelgaard.pathwake.system.AlarmNotifications
 import io.github.emilmelgaard.pathwake.system.AndroidExactAlarms
 import io.github.emilmelgaard.pathwake.system.AndroidRinger
 import io.github.emilmelgaard.pathwake.system.AppPreferences
 import io.github.emilmelgaard.pathwake.system.PreferencesRingingSessionStore
 import io.github.emilmelgaard.pathwake.system.PreferencesSchedulerState
+import io.github.emilmelgaard.pathwake.system.SoundLibrary
+import java.io.File
 import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -35,6 +41,14 @@ class AppContainer(context: Context) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val preferences by lazy { AppPreferences(context) }
+    val settings by lazy {
+        // Not preferencesDataStoreFile(): it resolves against the application context, which isn't device protected.
+        val dataStore = PreferenceDataStoreFactory.create(scope = scope) {
+            File(context.createDeviceProtectedStorageContext().filesDir, "datastore/settings.preferences_pb")
+        }
+        SettingsRepository(dataStore, scope)
+    }
+    val soundLibrary by lazy { SoundLibrary(context) }
     val notifications by lazy { AlarmNotifications(context) }
     val exactAlarms by lazy { AndroidExactAlarms(context) }
     val ringing by lazy { RingingController(PreferencesRingingSessionStore(context)) }
@@ -43,6 +57,23 @@ class AppContainer(context: Context) {
 
     /** Alarms for the UI. Changes reschedule the platform alarm. */
     val alarmRepository: AlarmRepository by lazy { SchedulingAlarmRepository(storedAlarms, scheduler) }
+
+    /** Removes a sound file from the library; alarms (and the default for new alarms) that used it play the default. */
+    suspend fun deleteSound(sound: AlarmSound.Custom) {
+        soundLibrary.delete(sound)
+        alarmRepository.alarms.first().filter { it.sound == sound }.forEach {
+            alarmRepository.save(it.copy(sound = AlarmSound.Default))
+        }
+        settings.update { s ->
+            if (s.alarmDefaults.sound ==
+                sound
+            ) {
+                s.copy(alarmDefaults = s.alarmDefaults.copy(sound = AlarmSound.Default))
+            } else {
+                s
+            }
+        }
+    }
 }
 
 class PathwakeApplication : Application() {
@@ -53,6 +84,8 @@ class PathwakeApplication : Application() {
         super.onCreate()
         container = AppContainer(this)
         container.notifications.createChannels()
+        // Load the settings right away, so the first screen has the right theme.
+        container.settings.current
         // Catch up if the platform alarm was lost, e.g. because the app was force-stopped.
         container.scope.launch { container.scheduler.sync() }
     }

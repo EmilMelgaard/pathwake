@@ -1,6 +1,7 @@
 package io.github.emilmelgaard.pathwake.ring
 
 import io.github.emilmelgaard.pathwake.alarm.Alarm
+import java.time.Instant
 import java.time.ZonedDateTime
 import kotlin.random.Random
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +22,15 @@ class RingingController(
 ) {
     private val _session = MutableStateFlow(store.load())
     val session: StateFlow<RingingSession?> = _session.asStateFlow()
+
+    private val _lastInteraction = MutableStateFlow<Instant?>(null)
+
+    /** When the puzzles were last touched (to lower the volume while solving); null if not yet. */
+    val lastInteraction: StateFlow<Instant?> = _lastInteraction.asStateFlow()
+
+    fun interacted(at: Instant = Instant.now()) {
+        _lastInteraction.value = at
+    }
 
     /** Starts ringing [alarms], or adds them to the alarm that is already ringing. */
     fun ring(alarms: List<Alarm>, at: ZonedDateTime) = update { current ->
@@ -52,6 +62,7 @@ class RingingController(
         val current = _session.value
         val updated = transform(current)
         if (updated == current) return
+        if (updated == null) _lastInteraction.value = null
         store.save(updated)
         _session.value = updated
     }

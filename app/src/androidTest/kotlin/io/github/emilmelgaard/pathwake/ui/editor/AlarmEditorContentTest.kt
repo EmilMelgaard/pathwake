@@ -18,6 +18,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import io.github.emilmelgaard.pathwake.alarm.Alarm
+import io.github.emilmelgaard.pathwake.ui.common.PUZZLE_COUNT_TAG
 import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
 import java.time.DayOfWeek
 import org.junit.Assert.assertEquals

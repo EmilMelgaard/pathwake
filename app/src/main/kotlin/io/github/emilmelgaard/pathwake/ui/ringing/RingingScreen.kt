@@ -24,6 +24,8 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -45,12 +47,21 @@ fun RingingScreen(onFinished: () -> Unit, modifier: Modifier = Modifier) {
     val container = LocalContext.current.appContainer
     val viewModel: RingingViewModel = viewModel { RingingViewModel(container.ringing) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val settings by container.settings.current.collectAsStateWithLifecycle()
     val time by produceState(container.now().toLocalTime()) {
         minuteTicker(container.now).collect { value = it.toLocalTime() }
     }
     val currentOnFinished by rememberUpdatedState(onFinished)
     LaunchedEffect(state.finished) { if (state.finished) currentOnFinished() }
-    RingingContent(state, time, viewModel::onSolved, viewModel::newPuzzle, modifier)
+    RingingContent(
+        state,
+        time,
+        viewModel::onSolved,
+        viewModel::newPuzzle,
+        modifier,
+        look = settings.puzzleLook,
+        onInteraction = viewModel::interacted
+    )
 }
 
 /** The clock, what is ringing, and the puzzle that stops it. */
@@ -60,8 +71,20 @@ fun RingingContent(
     time: LocalTime,
     onSolved: () -> Unit,
     onNewPuzzle: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    look: PuzzleLook = PuzzleLook.PANEL,
+    /** Called whenever the puzzle is touched (the alarm is quieter while solving). */
+    onInteraction: () -> Unit = {}
 ) {
+    val currentOnInteraction by rememberUpdatedState(onInteraction)
+    val puzzleModifier = Modifier.pointerInput(Unit) {
+        awaitPointerEventScope {
+            while (true) {
+                awaitPointerEvent(PointerEventPass.Initial)
+                currentOnInteraction()
+            }
+        }
+    }
     Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         BoxWithConstraints(Modifier.fillMaxSize().safeDrawingPadding().padding(16.dp)) {
             if (maxWidth > maxHeight) {
@@ -74,7 +97,7 @@ fun RingingContent(
                         Header(state, time)
                         NewPuzzleButton(state, onNewPuzzle)
                     }
-                    PuzzleArea(state, onSolved, Modifier.weight(1f).fillMaxHeight())
+                    PuzzleArea(state, look, onSolved, puzzleModifier.weight(1f).fillMaxHeight())
                 }
             } else {
                 Column(
@@ -82,7 +105,7 @@ fun RingingContent(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Header(state, time, Modifier.padding(top = 16.dp))
-                    PuzzleArea(state, onSolved, Modifier.weight(1f).fillMaxWidth())
+                    PuzzleArea(state, look, onSolved, puzzleModifier.weight(1f).fillMaxWidth())
                     NewPuzzleButton(state, onNewPuzzle)
                 }
             }
@@ -116,7 +139,7 @@ private fun Header(state: RingingUiState, time: LocalTime, modifier: Modifier = 
 }
 
 @Composable
-private fun PuzzleArea(state: RingingUiState, onSolved: () -> Unit, modifier: Modifier = Modifier) {
+private fun PuzzleArea(state: RingingUiState, look: PuzzleLook, onSolved: () -> Unit, modifier: Modifier = Modifier) {
     Box(modifier, contentAlignment = Alignment.Center) {
         val generated = state.puzzle
         if (generated == null) {
@@ -126,7 +149,7 @@ private fun PuzzleArea(state: RingingUiState, onSolved: () -> Unit, modifier: Mo
                 PuzzlePanel(
                     puzzle = generated.puzzle,
                     onSolved = { onSolved() },
-                    look = PuzzleLook.PANEL,
+                    look = look,
                     enabled = !state.solved,
                     modifier = Modifier.fillMaxSize().testTag(RINGING_PUZZLE_TAG)
                 )

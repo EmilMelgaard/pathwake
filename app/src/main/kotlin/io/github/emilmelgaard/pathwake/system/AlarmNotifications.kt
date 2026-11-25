@@ -18,6 +18,7 @@ import io.github.emilmelgaard.pathwake.alarm.Occurrence
 import io.github.emilmelgaard.pathwake.ring.RingingSession
 import io.github.emilmelgaard.pathwake.ui.common.formatTime
 import io.github.emilmelgaard.pathwake.ui.ringing.RingingActivity
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
 import java.time.format.TextStyle
@@ -98,14 +99,16 @@ class AlarmNotifications(private val context: Context) {
         notify(missedId(occurrence.at.toInstant()), missed(text))
     }
 
-    fun showSilenced(session: RingingSession) {
-        val minutes = session.autoSilence?.toMinutes() ?: 0
-        val text = context.resources.getQuantityString(
-            R.plurals.missed_silenced,
-            minutes.toInt(),
-            title(session.alarmTime, session.labels),
-            minutes.toInt()
-        )
+    /** [session] stopped ringing by itself after ringing for [duration]. */
+    fun showSilenced(session: RingingSession, duration: Duration) {
+        // Short sounds that only play once stop within a minute.
+        val seconds = duration.seconds.coerceAtLeast(1).toInt()
+        val (plural, count) = if (seconds < 60) {
+            R.plurals.missed_silenced_seconds to seconds
+        } else {
+            R.plurals.missed_silenced to (seconds + 30) / 60
+        }
+        val text = context.resources.getQuantityString(plural, count, title(session.alarmTime, session.labels), count)
         notify(missedId(session.silenceAt ?: Instant.now()), missed(text))
     }
 

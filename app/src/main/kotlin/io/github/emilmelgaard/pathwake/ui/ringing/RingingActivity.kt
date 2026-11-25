@@ -4,12 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import io.github.emilmelgaard.pathwake.appContainer
 import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
 
 /**
@@ -32,6 +34,13 @@ class RingingActivity : ComponentActivity() {
                 RingingScreen(onFinished = ::finish)
             }
         }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        // Turning the volume down is blocked while ringing (if set); the ringing service also undoes it from elsewhere.
+        val locked = keyCode == KeyEvent.KEYCODE_VOLUME_DOWN || keyCode == KeyEvent.KEYCODE_VOLUME_MUTE
+        if (locked && appContainer.settings.current.value.lockVolumeButtons) return true
+        return super.onKeyDown(keyCode, event)
     }
 
     companion object {

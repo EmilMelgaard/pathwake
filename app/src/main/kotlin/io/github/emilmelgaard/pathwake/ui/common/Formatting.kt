@@ -5,6 +5,7 @@ import android.content.res.Resources
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
@@ -13,6 +14,8 @@ import androidx.compose.ui.res.stringResource
 import io.github.emilmelgaard.pathwake.R
 import io.github.emilmelgaard.pathwake.alarm.Alarm
 import io.github.emilmelgaard.pathwake.alarm.AlarmSchedule
+import io.github.emilmelgaard.pathwake.alarm.AlarmSound
+import io.github.emilmelgaard.pathwake.alarm.AutoSilence
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import java.time.DayOfWeek
 import java.time.Duration
@@ -54,9 +57,12 @@ fun repeatSummary(alarm: Alarm, firstDay: DayOfWeek): RepeatSummary = when {
 @ReadOnlyComposable
 fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
 
+/** The first day of the week chosen in the settings; null: the locale's. */
+val LocalFirstDayOfWeek = staticCompositionLocalOf<DayOfWeek?> { null }
+
 @Composable
 @ReadOnlyComposable
-fun firstDayOfWeek(): DayOfWeek = WeekFields.of(currentLocale()).firstDayOfWeek
+fun firstDayOfWeek(): DayOfWeek = LocalFirstDayOfWeek.current ?: WeekFields.of(currentLocale()).firstDayOfWeek
 
 /** The time in the user's 12/24-hour format, e.g. "07:00" or "7:00 AM". */
 fun Context.formatTime(time: LocalTime): String {
@@ -143,3 +149,26 @@ fun puzzleText(alarm: Alarm): String = stringResource(
     difficultyName(alarm.difficulty),
     pluralStringResource(R.plurals.puzzles, alarm.puzzleCount, alarm.puzzleCount)
 )
+
+@Composable
+fun autoSilenceText(autoSilence: AutoSilence): String = when (autoSilence) {
+    AutoSilence.Never -> stringResource(R.string.auto_silence_never)
+    AutoSilence.WhenSoundEnds -> stringResource(R.string.auto_silence_sound_ends)
+    is AutoSilence.After -> pluralStringResource(R.plurals.auto_silence_after, autoSilence.minutes, autoSilence.minutes)
+}
+
+@Composable
+fun soundTitle(sound: AlarmSound): String = when (sound) {
+    AlarmSound.Default -> stringResource(R.string.sound_default)
+    AlarmSound.Silent -> stringResource(R.string.sound_silent)
+    is AlarmSound.Tone -> sound.title
+    is AlarmSound.Custom -> sound.title
+}
+
+/** "Off", "15 seconds", "1 minute". */
+@Composable
+fun crescendoText(seconds: Int): String = when {
+    seconds <= 0 -> stringResource(R.string.off)
+    seconds < 60 -> pluralStringResource(R.plurals.seconds, seconds, seconds)
+    else -> pluralStringResource(R.plurals.minutes, seconds / 60, seconds / 60)
+}

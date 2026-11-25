@@ -32,10 +32,11 @@ data class PlaygroundUiState(
 /** Lets the user try generated puzzles outside of an alarm. */
 class PlaygroundViewModel(
     initialDifficulty: Difficulty = Difficulty.MEDIUM,
+    initialLook: PuzzleLook = PuzzleLook.PANEL,
     private val generatorDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val nextSeed: () -> Long = { Random.nextLong() }
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(PlaygroundUiState(difficulty = initialDifficulty))
+    private val _uiState = MutableStateFlow(PlaygroundUiState(difficulty = initialDifficulty, look = initialLook))
     val uiState: StateFlow<PlaygroundUiState> = _uiState.asStateFlow()
 
     private var generation: Job? = null

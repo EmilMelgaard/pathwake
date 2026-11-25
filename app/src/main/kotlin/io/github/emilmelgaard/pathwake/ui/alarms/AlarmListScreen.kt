@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -62,6 +63,7 @@ import io.github.emilmelgaard.pathwake.alarm.Alarm
 import io.github.emilmelgaard.pathwake.appContainer
 import io.github.emilmelgaard.pathwake.system.AlarmPermission
 import io.github.emilmelgaard.pathwake.system.AlarmPermissions
+import io.github.emilmelgaard.pathwake.system.AlarmVolume
 import io.github.emilmelgaard.pathwake.ui.common.LocalMessenger
 import io.github.emilmelgaard.pathwake.ui.common.formatCountdown
 import io.github.emilmelgaard.pathwake.ui.common.formatDate
@@ -76,6 +78,7 @@ data class AlarmListActions(
     val onOpen: (Alarm) -> Unit = {},
     val onAdd: () -> Unit = {},
     val onOpenPlayground: () -> Unit = {},
+    val onOpenSettings: () -> Unit = {},
     val onToggle: (Alarm, Boolean) -> Unit = { _, _ -> },
     val onSkipNext: (Alarm) -> Unit = {},
     val onCancelSkip: (Alarm) -> Unit = {},
@@ -91,9 +94,11 @@ data class AlarmListActions(
  * @property ringing an alarm is ringing.
  * @property missingPermissions permissions alarms need but don't have.
  * @property canRequestNotifications the notification permission can be granted in a dialog rather than in settings.
+ * @property volumeMuted the device's alarm volume is off.
  */
 data class AlarmListNotices(
     val ringing: Boolean = false,
+    val volumeMuted: Boolean = false,
     val missingPermissions: List<AlarmPermission> = emptyList(),
     val canRequestNotifications: Boolean = false
 )
@@ -104,6 +109,7 @@ fun AlarmListScreen(
     onOpenAlarm: (Long) -> Unit,
     onAddAlarm: () -> Unit,
     onOpenPlayground: () -> Unit,
+    onOpenSettings: () -> Unit,
     onAlarmDeleted: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -117,7 +123,10 @@ fun AlarmListScreen(
     val activity = LocalActivity.current
     val ringing by container.ringing.session.collectAsStateWithLifecycle()
 
+    val alarmVolume = remember { AlarmVolume(context) }
+
     fun currentPermissionNotices() = AlarmListNotices(
+        volumeMuted = alarmVolume.isMuted,
         missingPermissions = AlarmPermissions.missing(container.notifications, container.exactAlarms),
         // After a second refusal, Android no longer shows the dialog: then the button opens settings instead.
         canRequestNotifications = AlarmPermissions.needsNotificationPermission(context) && (
@@ -141,12 +150,14 @@ fun AlarmListScreen(
             ringing = ringing != null,
             // Only nag about permissions once there is an alarm that needs them.
             missingPermissions = permissionNotices.missingPermissions.takeIf { state.items.any { it.alarm.enabled } }
-                .orEmpty()
+                .orEmpty(),
+            volumeMuted = permissionNotices.volumeMuted && state.items.any { it.alarm.enabled }
         ),
         actions = AlarmListActions(
             onOpen = { onOpenAlarm(it.id) },
             onAdd = onAddAlarm,
             onOpenPlayground = onOpenPlayground,
+            onOpenSettings = onOpenSettings,
             onToggle = viewModel::setEnabled,
             onSkipNext = viewModel::skipNext,
             onCancelSkip = viewModel::cancelSkip,
@@ -190,6 +201,9 @@ fun AlarmListContent(
                 actions = {
                     IconButton(onClick = actions.onOpenPlayground) {
                         Icon(painterResource(R.drawable.ic_puzzle), stringResource(R.string.try_puzzles))
+                    }
+                    IconButton(onClick = actions.onOpenSettings) {
+                        Icon(Icons.Filled.Settings, stringResource(R.string.settings))
                     }
                 }
             )
@@ -240,6 +254,21 @@ private fun Notices(notices: AlarmListNotices, actions: AlarmListActions) {
                     modifier = Modifier.weight(1f)
                 )
                 Button(onClick = actions.onOpenRinging) { Text(stringResource(R.string.solve_puzzles)) }
+            }
+        }
+    }
+    if (notices.volumeMuted) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.alarm_volume_muted),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                TextButton(onClick = actions.onOpenSettings) { Text(stringResource(R.string.settings)) }
             }
         }
     }

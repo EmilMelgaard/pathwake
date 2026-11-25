@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -42,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.emilmelgaard.pathwake.R
+import io.github.emilmelgaard.pathwake.appContainer
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import io.github.emilmelgaard.pathwake.puzzle.Generator
 import io.github.emilmelgaard.pathwake.puzzle.Mechanic
@@ -49,25 +51,37 @@ import io.github.emilmelgaard.pathwake.ui.common.difficultyName
 import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzleLook
 import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzlePanel
 import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun PlaygroundScreen(
     initialDifficulty: Difficulty,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: PlaygroundViewModel = viewModel { PlaygroundViewModel(initialDifficulty) }
+    viewModel: PlaygroundViewModel = playgroundViewModel(initialDifficulty)
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val container = LocalContext.current.appContainer
     PlaygroundScreen(
         state = state,
         onBack = onBack,
         onSelectDifficulty = viewModel::selectDifficulty,
-        onSelectLook = viewModel::selectLook,
+        onSelectLook = { look ->
+            viewModel.selectLook(look)
+            container.scope.launch { container.settings.update { it.copy(puzzleLook = look) } }
+        },
         onNewPuzzle = viewModel::newPuzzle,
         onToggleSolution = viewModel::toggleSolution,
         onSolved = viewModel::onSolved,
         modifier = modifier
     )
+}
+
+/** The playground starts with the puzzle look from the settings; changing it there changes the setting. */
+@Composable
+private fun playgroundViewModel(initialDifficulty: Difficulty): PlaygroundViewModel {
+    val container = LocalContext.current.appContainer
+    return viewModel { PlaygroundViewModel(initialDifficulty, container.settings.current.value.puzzleLook) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

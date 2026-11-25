@@ -2,6 +2,8 @@ package io.github.emilmelgaard.pathwake.ui.editor
 
 import io.github.emilmelgaard.pathwake.alarm.Alarm
 import io.github.emilmelgaard.pathwake.alarm.AlarmSchedule
+import io.github.emilmelgaard.pathwake.alarm.AlarmSound
+import io.github.emilmelgaard.pathwake.alarm.AutoSilence
 import io.github.emilmelgaard.pathwake.alarm.DateRange
 import io.github.emilmelgaard.pathwake.data.FakeAlarmRepository
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
@@ -136,11 +138,24 @@ class AlarmEditorViewModelTest {
     @Test
     fun autoSilence_canBeTurnedOff() = runTest(dispatcher) {
         val viewModel = viewModel(FakeAlarmRepository())
-        assertEquals(Alarm.DEFAULT_AUTO_SILENCE_MINUTES, viewModel.state.alarm.autoSilenceMinutes)
-        viewModel.setAutoSilence(null)
-        assertNull(viewModel.state.alarm.autoSilenceMinutes)
-        viewModel.setAutoSilence(30)
-        assertEquals(30, viewModel.state.alarm.autoSilenceMinutes)
+        assertEquals(AutoSilence.DEFAULT, viewModel.state.alarm.autoSilence)
+        viewModel.setAutoSilence(AutoSilence.Never)
+        assertEquals(AutoSilence.Never, viewModel.state.alarm.autoSilence)
+    }
+
+    @Test
+    fun newAlarm_startsWithTheDefaults() = runTest(dispatcher) {
+        val defaults = Alarm(difficulty = Difficulty.HARD, puzzleCount = 3, sound = AlarmSound.Silent, vibrate = false)
+        val viewModel = AlarmEditorViewModel(0, FakeAlarmRepository(), { now }, flowOf(now)) { defaults }
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(defaults, viewModel.state.alarm)
+        assertFalse(viewModel.state.isDirty)
+
+        viewModel.setSound(AlarmSound.Default)
+        viewModel.setVibrate(true)
+        assertTrue(viewModel.state.isDirty)
     }
 
     @Test

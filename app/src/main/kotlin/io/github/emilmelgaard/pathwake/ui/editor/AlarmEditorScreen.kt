@@ -93,12 +93,20 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.emilmelgaard.pathwake.R
 import io.github.emilmelgaard.pathwake.alarm.Alarm
+import io.github.emilmelgaard.pathwake.alarm.AlarmSound
+import io.github.emilmelgaard.pathwake.alarm.AutoSilence
 import io.github.emilmelgaard.pathwake.alarm.DateRange
 import io.github.emilmelgaard.pathwake.appContainer
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import io.github.emilmelgaard.pathwake.system.AlarmPermissions
+import io.github.emilmelgaard.pathwake.ui.common.ChoiceField
+import io.github.emilmelgaard.pathwake.ui.common.DifficultyChips
 import io.github.emilmelgaard.pathwake.ui.common.LocalMessenger
 import io.github.emilmelgaard.pathwake.ui.common.LocalUnsavedChangesGuard
+import io.github.emilmelgaard.pathwake.ui.common.PuzzleCountRow
+import io.github.emilmelgaard.pathwake.ui.common.SwitchRow
+import io.github.emilmelgaard.pathwake.ui.common.ValueRow
+import io.github.emilmelgaard.pathwake.ui.common.autoSilenceText
 import io.github.emilmelgaard.pathwake.ui.common.countdown
 import io.github.emilmelgaard.pathwake.ui.common.currentLocale
 import io.github.emilmelgaard.pathwake.ui.common.difficultyName
@@ -109,6 +117,8 @@ import io.github.emilmelgaard.pathwake.ui.common.formatDayName
 import io.github.emilmelgaard.pathwake.ui.common.formatTime
 import io.github.emilmelgaard.pathwake.ui.common.formatWhen
 import io.github.emilmelgaard.pathwake.ui.common.orderedWeek
+import io.github.emilmelgaard.pathwake.ui.common.soundTitle
+import io.github.emilmelgaard.pathwake.ui.sound.SoundPickerDialog
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -131,7 +141,9 @@ data class AlarmEditorActions(
     val onSkipNextChange: (Boolean) -> Unit = {},
     val onDifficultyChange: (Difficulty) -> Unit = {},
     val onPuzzleCountChange: (Int) -> Unit = {},
-    val onAutoSilenceChange: (Int?) -> Unit = {}
+    val onAutoSilenceChange: (AutoSilence) -> Unit = {},
+    val onSoundChange: (AlarmSound) -> Unit = {},
+    val onVibrateChange: (Boolean) -> Unit = {}
 )
 
 @Composable
@@ -143,7 +155,9 @@ fun AlarmEditorScreen(
 ) {
     val container = LocalContext.current.appContainer
     val viewModel: AlarmEditorViewModel = viewModel {
-        AlarmEditorViewModel(alarmId, container.alarmRepository, container.now)
+        AlarmEditorViewModel(alarmId, container.alarmRepository, container.now) {
+            container.settings.get().alarmDefaults.newAlarm()
+        }
     }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val messenger = LocalMessenger.current
@@ -203,7 +217,9 @@ fun AlarmEditorScreen(
             onSkipNextChange = viewModel::setSkipNext,
             onDifficultyChange = viewModel::setDifficulty,
             onPuzzleCountChange = viewModel::setPuzzleCount,
-            onAutoSilenceChange = viewModel::setAutoSilence
+            onAutoSilenceChange = viewModel::setAutoSilence,
+            onSoundChange = viewModel::setSound,
+            onVibrateChange = viewModel::setVibrate
         ),
         modifier = modifier
     )
@@ -534,42 +550,8 @@ private fun PuzzleSection(alarm: Alarm, actions: AlarmEditorActions) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.puzzles_title), style = MaterialTheme.typography.titleMedium)
         Text(stringResource(R.string.difficulty), style = MaterialTheme.typography.titleSmall)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Difficulty.entries.forEach { difficulty ->
-                FilterChip(
-                    selected = difficulty == alarm.difficulty,
-                    onClick = { actions.onDifficultyChange(difficulty) },
-                    label = { Text(difficultyName(difficulty)) }
-                )
-            }
-        }
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                stringResource(R.string.puzzles_to_solve),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f)
-            )
-            val fewer = stringResource(R.string.fewer_puzzles)
-            FilledTonalIconButton(
-                onClick = { actions.onPuzzleCountChange(alarm.puzzleCount - 1) },
-                enabled = alarm.puzzleCount > 1,
-                modifier = Modifier.semantics { contentDescription = fewer }
-            ) {
-                Text("−", style = MaterialTheme.typography.titleLarge)
-            }
-            Text(
-                alarm.puzzleCount.toString(),
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.width(48.dp).testTag(PUZZLE_COUNT_TAG)
-            )
-            FilledTonalIconButton(
-                onClick = { actions.onPuzzleCountChange(alarm.puzzleCount + 1) },
-                enabled = alarm.puzzleCount < Alarm.MAX_PUZZLES
-            ) {
-                Icon(Icons.Filled.Add, stringResource(R.string.more_puzzles))
-            }
-        }
+        DifficultyChips(alarm.difficulty, actions.onDifficultyChange)
+        PuzzleCountRow(alarm.puzzleCount, Alarm.MAX_PUZZLES, actions.onPuzzleCountChange)
         OutlinedButton(onClick = { actions.onTryPuzzle(alarm.difficulty) }) {
             Icon(painterResource(R.drawable.ic_puzzle), contentDescription = null, Modifier.size(18.dp))
             Text(stringResource(R.string.try_puzzle), modifier = Modifier.padding(start = 8.dp))
@@ -577,47 +559,33 @@ private fun PuzzleSection(alarm: Alarm, actions: AlarmEditorActions) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RingingSection(alarm: Alarm, actions: AlarmEditorActions) {
-    var expanded by remember { mutableStateOf(false) }
+    var picking by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(stringResource(R.string.ringing_title), style = MaterialTheme.typography.titleMedium)
-        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
-            OutlinedTextField(
-                value = autoSilenceText(alarm.autoSilenceMinutes),
-                onValueChange = {},
-                readOnly = true,
-                singleLine = true,
-                label = { Text(stringResource(R.string.auto_silence)) },
-                supportingText = { Text(stringResource(R.string.auto_silence_hint)) },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                    .testTag(AUTO_SILENCE_TAG)
-            )
-            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                Alarm.AUTO_SILENCE_CHOICES.forEach { minutes ->
-                    DropdownMenuItem(
-                        text = { Text(autoSilenceText(minutes)) },
-                        onClick = {
-                            expanded = false
-                            actions.onAutoSilenceChange(minutes)
-                        },
-                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
-                    )
-                }
-            }
-        }
+        ValueRow(stringResource(R.string.sound), soundTitle(alarm.sound), onClick = { picking = true })
+        SwitchRow(stringResource(R.string.vibrate), alarm.vibrate, actions.onVibrateChange)
+        ChoiceField(
+            label = stringResource(R.string.auto_silence),
+            value = alarm.autoSilence,
+            choices = AutoSilence.CHOICES,
+            text = { autoSilenceText(it) },
+            onChange = actions.onAutoSilenceChange,
+            supportingText = stringResource(R.string.auto_silence_hint),
+            modifier = Modifier.fillMaxWidth().testTag(AUTO_SILENCE_TAG)
+        )
     }
-}
-
-@Composable
-private fun autoSilenceText(minutes: Int?): String = if (minutes == null) {
-    stringResource(R.string.auto_silence_never)
-} else {
-    pluralStringResource(R.plurals.auto_silence_after, minutes, minutes)
+    if (picking) {
+        SoundPickerDialog(
+            current = alarm.sound,
+            onDismiss = { picking = false },
+            onPick = {
+                picking = false
+                actions.onSoundChange(it)
+            }
+        )
+    }
 }
 
 private fun LocalDate.toUtcMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
@@ -634,5 +602,4 @@ private fun fromDay(today: LocalDate) = object : SelectableDates {
 
 private const val MAX_LABEL_LENGTH = 60
 internal const val ALARM_EDITOR_TAG = "alarmEditor"
-internal const val PUZZLE_COUNT_TAG = "puzzleCount"
 internal const val AUTO_SILENCE_TAG = "autoSilence"

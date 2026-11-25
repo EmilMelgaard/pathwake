@@ -3,6 +3,7 @@ package io.github.emilmelgaard.pathwake.system
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import io.github.emilmelgaard.pathwake.alarm.AlarmSound
 import io.github.emilmelgaard.pathwake.alarm.SchedulerState
 import io.github.emilmelgaard.pathwake.data.difficultyOf
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
@@ -63,7 +64,10 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
             puzzleCount = preferences.getInt(PUZZLE_COUNT, 1),
             solved = preferences.getInt(SOLVED, 0),
             seed = preferences.getLong(SEED, 0),
-            puzzleNumber = preferences.getInt(PUZZLE_NUMBER, 0)
+            puzzleNumber = preferences.getInt(PUZZLE_NUMBER, 0),
+            sound = AlarmSound.parse(preferences.getString(SOUND, null), preferences.getString(SOUND_TITLE, null)),
+            vibrate = preferences.getBoolean(VIBRATE, true),
+            stopWhenSoundEnds = preferences.getBoolean(STOP_WHEN_SOUND_ENDS, false)
         )
     }.getOrNull()
 
@@ -80,6 +84,10 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
         putInt(SOLVED, session.solved)
         putLong(SEED, session.seed)
         putInt(PUZZLE_NUMBER, session.puzzleNumber)
+        putString(SOUND, session.sound.key)
+        session.sound.title?.let { putString(SOUND_TITLE, it) }
+        putBoolean(VIBRATE, session.vibrate)
+        putBoolean(STOP_WHEN_SOUND_ENDS, session.stopWhenSoundEnds)
     }
 
     private companion object {
@@ -93,6 +101,10 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
         const val SOLVED = "solved"
         const val SEED = "seed"
         const val PUZZLE_NUMBER = "puzzle_number"
+        const val SOUND = "sound"
+        const val SOUND_TITLE = "sound_title"
+        const val VIBRATE = "vibrate"
+        const val STOP_WHEN_SOUND_ENDS = "stop_when_sound_ends"
 
         /** Unit separator: can't be typed into a label. */
         const val SEPARATOR = "\u001F"

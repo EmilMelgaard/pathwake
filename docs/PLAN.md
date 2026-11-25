@@ -17,7 +17,7 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
 | Puzzles per alarm          | Configurable per alarm (1-10)                                                                              |
 | Escape hatches             | "New puzzle" button (same difficulty); auto-silence: never / after N minutes / when the sound ends          |
 | Volume while solving       | Setting: full / lower while drawing / mute while drawing (back to full after ~10 s idle)                   |
-| Anti-cheat                 | Settings: volume keys don't lower a ringing alarm; require a puzzle to disable/skip/delete an alarm due within 2 h |
+| Anti-cheat                 | Setting (on by default): volume keys and other apps can't turn down a ringing alarm. Changing alarms never needs a puzzle |
 | Puzzle look                | Setting: "Panel" (Witness-inspired, original art, glowing line) or "Material" (follows app theme)          |
 | Languages                  | English; all strings in resources                                                                          |
 | Workflow                   | One branch + PR per chunk; CI attaches a debug APK                                                         |
@@ -38,8 +38,8 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
   - UI: Material 3, adaptive layouts (list-detail on tablets via Navigation 3 scenes), puzzle panel drawn on a
     `Canvas`.
   - Data: Room 2.8 (alarms), DataStore (settings), manual dependency injection via an `AppContainer` (no Hilt).
-    The database lives in device-protected storage so alarms can be rescheduled after a reboot before the user
-    unlocks the device (direct boot).
+    The database, settings and custom sound files live in device-protected storage so alarms can be rescheduled and
+    ring after a reboot before the user unlocks the device (direct boot).
   - Alarm engine:
     - Scheduling: one `AlarmManager.setAlarmClock()` alarm for the next alarm time, with `USE_EXACT_ALARM` (Android 13+)
       or `SCHEDULE_EXACT_ALARM` (Android 12). Rescheduled after every change, on (locked) boot, time and time-zone
@@ -53,13 +53,13 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
 - Multiple alarms with label and an on/off toggle; sorted list with a "next alarm in X h Y min" summary.
 - Repeat on weekdays, or one-time on the next occurrence or on a specific date.
 - Pause date ranges per alarm (for example vacations), and skip the next occurrence.
-- Sound: default, system alarm tones, or custom audio files (persisted document URI); volume, gradual volume
-  increase, vibration, preview.
+- Sound: default, silent, system alarm tones, or custom audio files (copied into the app); vibration, preview.
+  Alarm volume and gradual volume increase are app-wide settings.
 - Puzzle difficulty and puzzle count per alarm, with a "try it" preview.
 - Auto-silence (never / N minutes / when the sound ends) and a missed-alarm notification.
 - Undo after delete, duplicate alarm, and defaults for new alarms.
-- Settings: theme (system/light/dark, dynamic color), puzzle look, volume while solving, anti-cheat options, first day
-  of week.
+- Settings: alarm volume, gradual volume, volume while solving, anti-cheat, defaults for new alarms, theme
+  (system/light/dark, dynamic color), puzzle look, first day of week.
 - No snooze.
 
 ## Chunks
@@ -116,7 +116,7 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
      - Deleting shows an Undo snackbar. Duplicating copies everything except a skipped day.
      - The list highlights the open alarm on tablets; the playground is reachable from the list ("Try puzzles") and
        from the editor ("Try a puzzle" at the alarm's difficulty).
-4. **Alarm engine** *(in review)*
+4. **Alarm engine** *(done, #5)*
    - Scheduling, reboot and time-change handling, direct boot.
    - Ringing service and lock-screen ringing activity with N puzzles, "new puzzle", auto-silence.
    - Permission onboarding (notifications, full-screen intent).
@@ -137,9 +137,25 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
        sound can't be read, so a bundled tone plays instead. Custom sounds and volume options come in chunk 5.
      - Permissions: notifications are requested when the first alarm is saved. The alarm list warns (with a button to
        fix it) when notifications, exact alarms (Android 12) or full-screen intents (Android 14+) are missing.
-5. **Sounds and settings**
+5. **Sounds and settings** *(in review)*
    - Tone picker, custom files, gradual volume, vibration, preview.
    - Settings screen: theme, puzzle look, volume while solving, anti-cheat, defaults.
+   - Decisions:
+     - Per alarm: sound (default, silent, a device alarm tone or your own file), vibration, and when to stop ringing
+       (after N minutes, never, or when the sound ends: the sound plays once).
+     - App-wide (settings, behind the gear in the alarm list): the device's alarm volume with a test button, gradually
+       increasing volume (off, 15 s to 5 min), volume while solving (default: lower while drawing, to 25 %, back to
+       full 10 s after the last touch), "keep ringing alarms loud", defaults for new alarms, theme, dynamic color
+       (Android 12+), puzzle look and first day of the week.
+     - The puzzle requirement for changing alarms that ring soon is dropped. "Keep ringing alarms loud" (on by default)
+       ignores volume-down while the puzzles show and restores the alarm volume if anything lowers it while ringing.
+     - Custom sounds are copied into device-protected storage (max 30 MB), so they keep working if the original file
+       moves and they play before the first unlock. Deleting one resets the alarms using it to the default sound.
+       Device tones can't be read before the first unlock, so the bundled tone plays then; if the chosen sound fails
+       later on, the default and then the bundled tone take over (and "when the sound ends" falls back to 10 minutes).
+     - Alarms ringing together: the first audible sound wins, vibration if any wants it, "never" stops beats minutes
+       (the longest wins), and "when the sound ends" only applies if every alarm uses it.
+     - Settings are stored with DataStore in device-protected storage.
 6. **Polish and release**
    - App icon, edge cases (overlapping alarms, phone call while ringing), accessibility and color-blind pass.
    - Play policy audit, store listing and screenshots (tablet + phone), privacy policy page.

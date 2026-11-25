@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.emilmelgaard.pathwake.alarm.Alarm
 import io.github.emilmelgaard.pathwake.alarm.AlarmSchedule
+import io.github.emilmelgaard.pathwake.alarm.AlarmSound
+import io.github.emilmelgaard.pathwake.alarm.AutoSilence
 import io.github.emilmelgaard.pathwake.alarm.DateRange
 import io.github.emilmelgaard.pathwake.alarm.minuteTicker
 import io.github.emilmelgaard.pathwake.data.AlarmRepository
@@ -47,7 +49,9 @@ class AlarmEditorViewModel(
     private val alarmId: Long,
     private val repository: AlarmRepository,
     private val now: () -> ZonedDateTime,
-    ticker: Flow<ZonedDateTime> = minuteTicker(now)
+    ticker: Flow<ZonedDateTime> = minuteTicker(now),
+    /** What a new alarm starts with. */
+    private val newAlarm: suspend () -> Alarm = { Alarm() }
 ) : ViewModel() {
     private data class Draft(val initial: Alarm, val alarm: Alarm, val isNew: Boolean, val missing: Boolean)
 
@@ -56,7 +60,7 @@ class AlarmEditorViewModel(
     init {
         viewModelScope.launch {
             val existing = if (alarmId == 0L) null else repository.get(alarmId)
-            val alarm = existing ?: Alarm()
+            val alarm = existing ?: newAlarm()
             draft.value = Draft(alarm, alarm, isNew = existing == null, missing = alarmId != 0L && existing == null)
         }
     }
@@ -127,8 +131,11 @@ class AlarmEditorViewModel(
 
     fun setPuzzleCount(count: Int) = edit { it.copy(puzzleCount = count.coerceIn(1, Alarm.MAX_PUZZLES)) }
 
-    /** [minutes] null: ring until the puzzles are solved. */
-    fun setAutoSilence(minutes: Int?) = edit { it.copy(autoSilenceMinutes = minutes?.coerceAtLeast(1)) }
+    fun setAutoSilence(autoSilence: AutoSilence) = edit { it.copy(autoSilence = autoSilence) }
+
+    fun setSound(sound: AlarmSound) = edit { it.copy(sound = sound) }
+
+    fun setVibrate(vibrate: Boolean) = edit { it.copy(vibrate = vibrate) }
 
     /** Saves (and enables) the alarm. */
     fun save(onSaved: (SavedAlarm) -> Unit) {

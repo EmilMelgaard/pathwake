@@ -12,15 +12,19 @@
         android:scaleX="0.94"
         android:scaleY="0.94"
         android:translateY="-3.76">
-        <!-- Bells and feet -->
-        <path
-            android:fillColor="#B3000000"
-            android:pathData="M29.94,46.66A9,9 0,0 1,42.66 33.94ZM65.34,33.94A9,9 0,0 1,78.06 46.66Z" />
-        <path
-            android:pathData="M42.5,79L39.5,84M65.5,79L68.5,84"
-            android:strokeWidth="4"
-            android:strokeColor="#B3000000"
-            android:strokeLineCap="round" />
+        <!-- Bells and feet, cut off at the rim: overlapping see-through shapes would show up lighter there -->
+        <group>
+            <!-- Everything except the face (a counterclockwise circle cuts a hole in the clockwise square) -->
+            <clip-path android:pathData="M0,0H108V108H0ZM28.25,58a25.75,25.75 0,1 0,51.5 0a25.75,25.75 0,1 0,-51.5 0Z" />
+            <path
+                android:fillColor="#B3000000"
+                android:pathData="M29.94,46.66A9,9 0,0 1,42.66 33.94ZM65.34,33.94A9,9 0,0 1,78.06 46.66Z" />
+            <path
+                android:pathData="M42.5,79L39.5,84M65.5,79L68.5,84"
+                android:strokeWidth="4"
+                android:strokeColor="#B3000000"
+                android:strokeLineCap="round" />
+        </group>
         <!-- Face -->
         <path
             android:pathData="M54,58m-24,0a24,24 0,1 0,48 0a24,24 0,1 0,-48 0"

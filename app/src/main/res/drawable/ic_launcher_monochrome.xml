@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed icon: the launcher icon's foreground in one color; the track is fainter than the line. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M38,38H70M38,48.67H70M38,59.33H70M38,70H70M38,38V70M48.67,38V70M59.33,38V70M70,29V70"
+        android:strokeWidth="4.5"
+        android:strokeColor="#66000000"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M38,70V59.33H48.67V48.67H59.33V38H70V29"
+        android:strokeWidth="4.5"
+        android:strokeColor="#FF000000"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M38,70m-6,0a6,6 0,1 0,12 0a6,6 0,1 0,-12 0" />
+</vector>

@@ -12,6 +12,7 @@ import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import io.github.emilmelgaard.pathwake.appContainer
+import io.github.emilmelgaard.pathwake.ui.common.drawAfterLoading
 import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
 
 /**
@@ -29,6 +30,7 @@ class RingingActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // Back doesn't stop the alarm; only solving the puzzles does.
         onBackPressedDispatcher.addCallback(this) { }
+        drawAfterLoading(appContainer.settings)
         setContent {
             PathwakeTheme(darkTheme = true) {
                 RingingScreen(onFinished = ::finish)

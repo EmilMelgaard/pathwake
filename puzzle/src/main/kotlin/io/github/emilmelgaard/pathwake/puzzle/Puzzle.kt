@@ -1,5 +1,8 @@
 package io.github.emilmelgaard.pathwake.puzzle
 
+import kotlin.math.abs
+import kotlin.math.sign
+
 /** Logical colors of symbols. The UI maps them to concrete colors per theme. */
 enum class SymbolColor { BLACK, WHITE, ORANGE, MAGENTA, GREEN, CYAN, YELLOW, BLUE }
 
@@ -124,6 +127,20 @@ data class Puzzle(
     operator fun contains(p: Pos): Boolean = p.x in 0 until cols && p.y in 0 until rows
 
     fun exitAt(node: Pos): Exit? = exits.firstOrNull { it.node == node }
+
+    /**
+     * For a single straight track with one start and one exit: the line from the start to the exit, which may still
+     * break rules (gaps, symbols). Null for other puzzles.
+     */
+    fun trackLine(): List<Pos>? {
+        if (width != 0 && height != 0) return null
+        val start = starts.singleOrNull() ?: return null
+        val end = exits.singleOrNull()?.node ?: return null
+        val dx = (end.x - start.x).sign
+        val dy = (end.y - start.y).sign
+        val steps = (abs(end.x - start.x) + abs(end.y - start.y)) / 2
+        return (0..steps).map { Pos(start.x + 2 * dx * it, start.y + 2 * dy * it) }
+    }
 
     /** The mirror image of [p] under [symmetry] (identity for non-symmetry puzzles). */
     fun mirror(p: Pos): Pos = symmetry.mirror(p, width, height)

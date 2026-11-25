@@ -3,8 +3,13 @@ package io.github.emilmelgaard.pathwake.ui.puzzle
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performCustomAccessibilityActionWithLabel
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import io.github.emilmelgaard.pathwake.puzzle.Direction
@@ -74,5 +79,25 @@ class PuzzlePanelTest {
     @Test
     fun symmetryPuzzle_solvedFromTheRightStart() {
         assertEquals(rightLine, drawLine(rightLine, symmetric))
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun straightTrack_canBeDrawnWithAScreenReaderAction() {
+        val track =
+            Puzzle(width = 3, height = 0, starts = setOf(Pos(0, 0)), exits = listOf(Exit(Pos(6, 0), Direction.RIGHT)))
+        var solved: List<Pos>? = null
+        rule.setContent { PuzzlePanel(track, onSolved = { solved = it }, modifier = Modifier.testTag("panel")) }
+
+        rule.onNodeWithTag("panel").performCustomAccessibilityActionWithLabel("Draw the line")
+        assertEquals(listOf(Pos(0, 0), Pos(2, 0), Pos(4, 0), Pos(6, 0)), solved)
+    }
+
+    @Test
+    fun gridPuzzle_hasNoScreenReaderShortcut() {
+        rule.setContent { PuzzlePanel(puzzle, onSolved = {}, modifier = Modifier.testTag("panel")) }
+        rule.onNodeWithTag("panel").assert(
+            SemanticsMatcher.keyNotDefined(SemanticsActions.CustomActions)
+        )
     }
 }

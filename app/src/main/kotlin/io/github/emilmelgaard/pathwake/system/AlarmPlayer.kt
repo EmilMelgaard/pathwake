@@ -31,6 +31,7 @@ class AlarmPlayer(private val context: Context, private val withWakeLock: Boolea
     private val audioManager = context.getSystemService(AudioManager::class.java)
     private var player: MediaPlayer? = null
     private var focusRequest: AudioFocusRequest? = null
+    private var hasFocus = false
     private var volume = 1f
 
     /**
@@ -42,9 +43,9 @@ class AlarmPlayer(private val context: Context, private val withWakeLock: Boolea
         if (focusRequest == null) {
             focusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                 .setAudioAttributes(ATTRIBUTES)
-                .setOnAudioFocusChangeListener { }
+                .setOnAudioFocusChangeListener { change -> hasFocus = change == AudioManager.AUDIOFOCUS_GAIN }
                 .build()
-                .also { audioManager.requestAudioFocus(it) }
+            requestFocus()
         }
         val player = MediaPlayer()
         this.player = player
@@ -88,10 +89,20 @@ class AlarmPlayer(private val context: Context, private val withWakeLock: Boolea
         player?.setVolume(volume, volume)
     }
 
+    /** Asks for audio focus again if it was refused or lost, e.g. because a phone call had it. */
+    fun regainFocus() {
+        if (!hasFocus) requestFocus()
+    }
+
+    private fun requestFocus() {
+        focusRequest?.let { hasFocus = audioManager.requestAudioFocus(it) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED }
+    }
+
     fun stop() {
         stopPlayer()
         focusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
         focusRequest = null
+        hasFocus = false
     }
 
     private fun stopPlayer() {

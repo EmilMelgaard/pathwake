@@ -61,17 +61,19 @@ class AppContainer(context: Context) {
     /** Removes a sound file from the library; alarms (and the default for new alarms) that used it play the default. */
     suspend fun deleteSound(sound: AlarmSound.Custom) {
         soundLibrary.delete(sound)
-        alarmRepository.alarms.first().filter { it.sound == sound }.forEach {
+        useDefaultSoundFor { it == sound }
+    }
+
+    /** Alarms restored from a backup may use sound files that weren't in it; they play the default sound instead. */
+    suspend fun forgetMissingSounds() = useDefaultSoundFor { it is AlarmSound.Custom && soundLibrary.file(it) == null }
+
+    private suspend fun useDefaultSoundFor(replace: (AlarmSound) -> Boolean) {
+        alarmRepository.alarms.first().filter { replace(it.sound) }.forEach {
             alarmRepository.save(it.copy(sound = AlarmSound.Default))
         }
         settings.update { s ->
-            if (s.alarmDefaults.sound ==
-                sound
-            ) {
-                s.copy(alarmDefaults = s.alarmDefaults.copy(sound = AlarmSound.Default))
-            } else {
-                s
-            }
+            val defaults = s.alarmDefaults
+            if (replace(defaults.sound)) s.copy(alarmDefaults = defaults.copy(sound = AlarmSound.Default)) else s
         }
     }
 }

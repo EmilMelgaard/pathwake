@@ -2,6 +2,7 @@ package io.github.emilmelgaard.pathwake.ring
 
 import io.github.emilmelgaard.pathwake.settings.SolvingVolume
 import java.time.Duration
+import kotlin.math.min
 
 /** The volume of a ringing alarm, relative to the alarm stream volume. */
 object RingVolume {
@@ -10,12 +11,22 @@ object RingVolume {
 
     private const val LOWER = 0.25f
 
+    /** During a phone call the alarm plays quietly, like the stock clock's in-call alarm. */
+    private const val IN_CALL = 0.125f
+
     /**
      * @param sinceStart how long the alarm has been ringing.
      * @param crescendo how long it takes to reach full volume (zero: start at full volume).
      * @param sinceInteraction how long ago the puzzle was last touched; null if not yet.
+     * @param inCall whether a phone call is ringing or active.
      */
-    fun of(sinceStart: Duration, crescendo: Duration, solving: SolvingVolume, sinceInteraction: Duration?): Float {
+    fun of(
+        sinceStart: Duration,
+        crescendo: Duration,
+        solving: SolvingVolume,
+        sinceInteraction: Duration?,
+        inCall: Boolean = false
+    ): Float {
         val ramp = if (crescendo.isZero || sinceStart >= crescendo) {
             1f
         } else {
@@ -30,6 +41,7 @@ object RingVolume {
             solving == SolvingVolume.LOWER -> LOWER
             else -> 0f
         }
-        return ramp * factor
+        val volume = ramp * factor
+        return if (inCall) min(volume, IN_CALL) else volume
     }
 }

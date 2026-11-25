@@ -60,6 +60,7 @@ fun RingingScreen(onFinished: () -> Unit, modifier: Modifier = Modifier) {
         viewModel::newPuzzle,
         modifier,
         look = settings.puzzleLook,
+        colorMarks = settings.colorMarks,
         onInteraction = viewModel::interacted
     )
 }
@@ -73,6 +74,7 @@ fun RingingContent(
     onNewPuzzle: () -> Unit,
     modifier: Modifier = Modifier,
     look: PuzzleLook = PuzzleLook.PANEL,
+    colorMarks: Boolean = false,
     /** Called whenever the puzzle is touched (the alarm is quieter while solving). */
     onInteraction: () -> Unit = {}
 ) {
@@ -97,7 +99,7 @@ fun RingingContent(
                         Header(state, time)
                         NewPuzzleButton(state, onNewPuzzle)
                     }
-                    PuzzleArea(state, look, onSolved, puzzleModifier.weight(1f).fillMaxHeight())
+                    PuzzleArea(state, look, colorMarks, onSolved, puzzleModifier.weight(1f).fillMaxHeight())
                 }
             } else {
                 Column(
@@ -105,7 +107,7 @@ fun RingingContent(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Header(state, time, Modifier.padding(top = 16.dp))
-                    PuzzleArea(state, look, onSolved, puzzleModifier.weight(1f).fillMaxWidth())
+                    PuzzleArea(state, look, colorMarks, onSolved, puzzleModifier.weight(1f).fillMaxWidth())
                     NewPuzzleButton(state, onNewPuzzle)
                 }
             }
@@ -139,7 +141,13 @@ private fun Header(state: RingingUiState, time: LocalTime, modifier: Modifier = 
 }
 
 @Composable
-private fun PuzzleArea(state: RingingUiState, look: PuzzleLook, onSolved: () -> Unit, modifier: Modifier = Modifier) {
+private fun PuzzleArea(
+    state: RingingUiState,
+    look: PuzzleLook,
+    colorMarks: Boolean,
+    onSolved: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(modifier, contentAlignment = Alignment.Center) {
         val generated = state.puzzle
         if (generated == null) {
@@ -150,6 +158,7 @@ private fun PuzzleArea(state: RingingUiState, look: PuzzleLook, onSolved: () -> 
                     puzzle = generated.puzzle,
                     onSolved = { onSolved() },
                     look = look,
+                    colorMarks = colorMarks,
                     enabled = !state.solved,
                     modifier = Modifier.fillMaxSize().testTag(RINGING_PUZZLE_TAG)
                 )

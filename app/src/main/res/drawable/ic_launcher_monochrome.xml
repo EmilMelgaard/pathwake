@@ -12,24 +12,18 @@
         android:scaleX="0.94"
         android:scaleY="0.94"
         android:translateY="-3.76">
-        <!-- Bells and feet, cut off at the rim: overlapping see-through shapes would show up lighter there -->
-        <group>
-            <!-- Everything except the face (a counterclockwise circle cuts a hole in the clockwise square) -->
-            <clip-path android:pathData="M0,0H108V108H0ZM28.25,58a25.75,25.75 0,1 0,51.5 0a25.75,25.75 0,1 0,-51.5 0Z" />
-            <path
-                android:fillColor="#B3000000"
-                android:pathData="M29.94,46.66A9,9 0,0 1,42.66 33.94ZM65.34,33.94A9,9 0,0 1,78.06 46.66Z" />
-            <path
-                android:pathData="M42.5,79L39.5,84M65.5,79L68.5,84"
-                android:strokeWidth="4"
-                android:strokeColor="#B3000000"
-                android:strokeLineCap="round" />
-        </group>
-        <!-- Face -->
+        <!--
+            The clock: rim, bells and feet as one shape, so the see-through color has no lighter overlaps or seams.
+            Everything is clockwise except the inner edge of the rim, which leaves the face open.
+        -->
         <path
-            android:pathData="M54,58m-24,0a24,24 0,1 0,48 0a24,24 0,1 0,-48 0"
-            android:strokeWidth="3.5"
-            android:strokeColor="#B3000000" />
+            android:fillColor="#B3000000"
+            android:pathData="M28.25,58A25.75,25.75 0,1 1,79.75 58A25.75,25.75 0,1 1,28.25 58Z
+                M31.75,58A22.25,22.25 0,1 0,76.25 58A22.25,22.25 0,1 0,31.75 58Z
+                M29.94,46.66A9,9 0,0 1,42.66 33.94Z
+                M65.34,33.94A9,9 0,0 1,78.06 46.66Z
+                M43.714,80.882L41.214,85.032A2,2 0,0 1,37.786 82.968L40.286,78.818A2,2 0,0 1,43.714 80.882Z
+                M67.714,78.818L70.214,82.968A2,2 0,0 1,66.786 85.032L64.286,80.882A2,2 0,0 1,67.714 78.818Z" />
         <!-- Puzzle grid (4x4 cells) with its exit at the top -->
         <path
             android:pathData="M41,45H67M41,51.5H67M41,58H67M41,64.5H67M41,71H67M41,45V71M47.5,45V71M54,39V71M60.5,45V71M67,45V71"

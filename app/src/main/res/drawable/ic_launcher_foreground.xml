@@ -5,35 +5,43 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Bells and feet -->
-    <path
-        android:fillColor="#FF93AFC4"
-        android:pathData="M29.94,46.66A9,9 0,0 1,42.66 33.94ZM65.34,33.94A9,9 0,0 1,78.06 46.66Z" />
-    <path
-        android:pathData="M42.5,79L39.5,84M65.5,79L68.5,84"
-        android:strokeWidth="4"
-        android:strokeColor="#FF93AFC4"
-        android:strokeLineCap="round" />
-    <!-- Face -->
-    <path
-        android:fillColor="#FF1A2F40"
-        android:pathData="M54,58m-24,0a24,24 0,1 0,48 0a24,24 0,1 0,-48 0"
-        android:strokeWidth="3.5"
-        android:strokeColor="#FF93AFC4" />
-    <!-- Puzzle grid (4x4 cells) with its exit at the top -->
-    <path
-        android:pathData="M41,45H67M41,51.5H67M41,58H67M41,64.5H67M41,71H67M41,45V71M47.5,45V71M54,39V71M60.5,45V71M67,45V71"
-        android:strokeWidth="2.4"
-        android:strokeColor="#FF6F8DA3"
-        android:strokeLineCap="round" />
-    <!-- The line from the start circle to the exit, which also forms the clock's hands -->
-    <path
-        android:pathData="M41,58H54V39"
-        android:strokeWidth="3.4"
-        android:strokeColor="#FFFFF6DC"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round" />
-    <path
-        android:fillColor="#FFFFF6DC"
-        android:pathData="M41,58m-4.5,0a4.5,4.5 0,1 0,9 0a4.5,4.5 0,1 0,-9 0" />
+    <!-- Moved up so the whole clock (bells to feet) is centered, and scaled to stay in the safe zone. -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.94"
+        android:scaleY="0.94"
+        android:translateY="-4.37">
+        <!-- Bells and feet -->
+        <path
+            android:fillColor="#FF93AFC4"
+            android:pathData="M29.94,46.66A9,9 0,0 1,42.66 33.94ZM65.34,33.94A9,9 0,0 1,78.06 46.66Z" />
+        <path
+            android:pathData="M42.5,79L39.5,84M65.5,79L68.5,84"
+            android:strokeWidth="4"
+            android:strokeColor="#FF93AFC4"
+            android:strokeLineCap="round" />
+        <!-- Face -->
+        <path
+            android:fillColor="#FF1A2F40"
+            android:pathData="M54,58m-24,0a24,24 0,1 0,48 0a24,24 0,1 0,-48 0"
+            android:strokeWidth="3.5"
+            android:strokeColor="#FF93AFC4" />
+        <!-- Puzzle grid (4x4 cells) with its exit at the top -->
+        <path
+            android:pathData="M41,45H67M41,51.5H67M41,58H67M41,64.5H67M41,71H67M41,45V71M47.5,45V71M54,39V71M60.5,45V71M67,45V71"
+            android:strokeWidth="2.4"
+            android:strokeColor="#FF6F8DA3"
+            android:strokeLineCap="round" />
+        <!-- The line from the start circle to the exit, which also forms the clock's hands -->
+        <path
+            android:pathData="M41,58H54V39"
+            android:strokeWidth="3.4"
+            android:strokeColor="#FFFFF6DC"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:fillColor="#FFFFF6DC"
+            android:pathData="M41,58m-4.5,0a4.5,4.5 0,1 0,9 0a4.5,4.5 0,1 0,-9 0" />
+    </group>
 </vector>

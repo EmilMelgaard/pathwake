@@ -45,7 +45,7 @@ one chunk per branch + pull request; keep the plan updated when decisions change
 - All dependency and plugin versions live in `gradle/libs.versions.toml`; never hard-code versions in build files.
 - JDK 21: Gradle daemon pinned by `gradle/gradle-daemon-jvm.properties`, compilation by `kotlin { jvmToolchain(21) }`.
 - Code style: ktlint (`android_studio` style, 120 cols) via Spotless; rules in root `build.gradle.kts` and `.editorconfig`.
-- Release: R8 minify + resource shrinking. Signing config only exists when `UPLOAD_KEYSTORE_FILE` is provided.
+- Release: R8 minify + resource shrinking. Signing config only exists when `RELEASE_KEYSTORE_FILE` is provided (see RELEASING.md).
 
 ## Commands (Windows: `.\gradlew.bat`)
 

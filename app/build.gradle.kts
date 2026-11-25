@@ -11,11 +11,11 @@ room {
     schemaDirectory("$projectDir/schemas")
 }
 
-// Release signing (upload key). Read from environment variables (CI) or from
+// Release signing (the release key, see RELEASING.md). Read from environment variables (CI) or from
 // ~/.gradle/gradle.properties (local). Never commit these values.
 fun secret(name: String): String? = providers.environmentVariable(name).orElse(providers.gradleProperty(name)).orNull
 
-val uploadKeystoreFile = secret("UPLOAD_KEYSTORE_FILE")
+val releaseKeystoreFile = secret("RELEASE_KEYSTORE_FILE")
 
 android {
     namespace = "io.github.emilmelgaard.pathwake"
@@ -35,12 +35,12 @@ android {
     }
 
     signingConfigs {
-        if (uploadKeystoreFile != null) {
-            create("upload") {
-                storeFile = file(uploadKeystoreFile)
-                storePassword = secret("UPLOAD_KEYSTORE_PASSWORD")
-                keyAlias = secret("UPLOAD_KEY_ALIAS")
-                keyPassword = secret("UPLOAD_KEY_PASSWORD")
+        if (releaseKeystoreFile != null) {
+            create("release") {
+                storeFile = file(releaseKeystoreFile)
+                storePassword = secret("RELEASE_KEYSTORE_PASSWORD")
+                keyAlias = secret("RELEASE_KEY_ALIAS")
+                keyPassword = secret("RELEASE_KEY_PASSWORD")
             }
         }
     }
@@ -50,8 +50,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            if (uploadKeystoreFile != null) {
-                signingConfig = signingConfigs.getByName("upload")
+            if (releaseKeystoreFile != null) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }

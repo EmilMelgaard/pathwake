@@ -156,7 +156,7 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
      - Alarms ringing together: the first audible sound wins, vibration if any wants it, "never" stops beats minutes
        (the longest wins), and "when the sound ends" only applies if every alarm uses it.
      - Settings are stored with DataStore in device-protected storage.
-6. **Polish** *(in review)*
+6. **Polish** *(done, #8)*
    - App icon, edge cases (overlapping alarms, phone call while ringing), accessibility and color-blind pass.
    - Decisions:
      - Icon: an alarm clock (bells, feet) whose face is a puzzle panel (4×4 grid, Panel colors). The lit line runs
@@ -179,8 +179,11 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
      - The app waits (up to 1 s, normally a few ms) for the settings before drawing its first frame, so it doesn't
        flash the wrong theme. The theme now uses the full generated color scheme (it mixed in default purple text).
 7. **Release**
-   - Play policy audit, store listing and screenshots (tablet + phone), privacy policy page.
-   - `v0.1.0` to internal testing, then closed testing (12 testers / 14 days).
+   - GitHub releases *(first: v0.1.0, a pre-release)*: tags build a signed APK, published on GitHub with its
+     checksum and signing certificate fingerprint. One release key signs every build; it is meant to become the
+     Play app signing key too, so GitHub and Play installs can update each other (see RELEASING.md).
+   - Google Play (waiting for a developer account): Play policy audit, store listing and screenshots (tablet +
+     phone), privacy policy page, internal testing, then closed testing (12 testers / 14 days).
 
 Ideas for later: home-screen widget, solve statistics/streaks, global vacation mode, daily puzzle without alarm.
 

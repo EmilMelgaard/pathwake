@@ -13,7 +13,7 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
 |----------------------------|------------------------------------------------------------------------------------------------------------|
 | Name                       | **Pathwake** (`io.github.emilmelgaard.pathwake`). The description may say the puzzles are inspired by *The Witness* (revisit if Play objects); the name and art stay original. |
 | Puzzle mechanics           | Dots, broken edges, colored squares, stars, triangles, tetris pieces (fixed + rotatable), subtractive tetris, elimination marks, multiple starts/exits, symmetry |
-| Difficulty                 | Preset levels per alarm (Easy, Medium, Hard, Expert, Fiendish), each mapping to grid size + mechanics      |
+| Difficulty                 | Preset levels per alarm (Trivial, Easy, Medium, Hard, Expert, Brutal), each mapping to grid size + mechanics. Trivial is a straight line, like the door panels in the game |
 | Puzzles per alarm          | Configurable per alarm (1-10)                                                                              |
 | Escape hatches             | "New puzzle" button (same difficulty); auto-silence: never / after N minutes / when the sound ends          |
 | Volume while solving       | Setting: full / lower while drawing / mute while drawing (back to full after ~10 s idle)                   |
@@ -73,7 +73,7 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
    - A temporary "Puzzle playground" home screen: pick a difficulty, generate a new puzzle, toggle the look.
    - *Feedback on:* drawing feel, visuals, puzzle variety.
    - Status:
-     - Generation: on desktop, Easy and Medium take under ~100 ms; Hard to Fiendish average 150-175 ms (max ~0.5 s).
+     - Generation: on desktop, Easy and Medium take under ~100 ms; Hard to Brutal average 150-175 ms (max ~0.5 s).
        Each run is capped at 2.5M solver steps.
      - Easy and Medium solution counts are exact. For larger puzzles where uniqueness can't be proven within budget,
        the generator accepts the puzzle once randomized probes find no alternative solution ("few solutions").
@@ -91,14 +91,17 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
        not touch each other or the axis. Line 0 (blue) starts at the start that comes first in reading order; colored
        dots must be covered by the line of their color. Either start can be dragged.
    - Presets:
+     - Trivial: a straight track from a start to an exit on a square panel (a 3×0 grid), like the door panels.
      - Easy: 3×3.
      - Medium: 4×4, may use symmetry.
      - Hard: 5×4 or 5×5, may add elimination.
      - Expert: 5×5, always one of subtractive tetris or elimination.
-     - Fiendish: 6×6, one or two advanced mechanics.
+     - Brutal (called Fiendish before): 6×6, one or two advanced mechanics.
      - All levels draw from the base mechanics: dots, squares, stars, triangles, tetris.
    - Caps: at most 8 stars and 2 elimination marks per puzzle.
-   - Generation on desktop: Hard averages ~85 ms, Expert ~165 ms, Fiendish ~285 ms (max < 1 s).
+   - Drawing: dots lie under the line (hidden when covered) and only show on top of it while they blink as an
+     error. Rotatable tetris pieces are tilted, except shapes that look the same rotated (single blocks, squares).
+   - Generation on desktop: Hard averages ~85 ms, Expert ~165 ms, Brutal ~285 ms (max < 1 s).
 3. **Alarm management** *(done, #4)*
    - Room data model and next-occurrence calculation (repeat days, dates, pauses, skip, DST/time zones), fully
      unit-tested.

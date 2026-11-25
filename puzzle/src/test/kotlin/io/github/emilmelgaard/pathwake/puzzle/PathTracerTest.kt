@@ -30,6 +30,18 @@ class PathTracerTest {
     }
 
     @Test
+    fun straightTrack_canOnlyBeDrawnStraight() {
+        val track = Puzzle(3, 0, setOf(node(0, 0)), listOf(Exit(node(3, 0), Direction.RIGHT)))
+        val t = tracer(track)
+        t.drag(1f, 0.4f)
+        t.drag(2f, -0.4f)
+        t.drag(3.4f, 0f)
+        assertTrue(t.isAtExit)
+        assertEquals(line(0 to 0, 1 to 0, 2 to 0, 3 to 0), t.path)
+        assertTrue(Validator.validate(track, t.path).isValid)
+    }
+
+    @Test
     fun drag_bigJumpsAreWalkedStepByStep() {
         val t = tracer()
         t.drag(2.5f, 2f)

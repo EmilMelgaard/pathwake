@@ -127,11 +127,12 @@ fun repeatText(alarm: Alarm): String = when (val summary = repeatSummary(alarm, 
 @Composable
 fun difficultyName(difficulty: Difficulty): String = stringResource(
     when (difficulty) {
+        Difficulty.TRIVIAL -> R.string.difficulty_trivial
         Difficulty.EASY -> R.string.difficulty_easy
         Difficulty.MEDIUM -> R.string.difficulty_medium
         Difficulty.HARD -> R.string.difficulty_hard
         Difficulty.EXPERT -> R.string.difficulty_expert
-        Difficulty.FIENDISH -> R.string.difficulty_fiendish
+        Difficulty.BRUTAL -> R.string.difficulty_brutal
     }
 )
 

@@ -6,9 +6,10 @@ import org.junit.Test
 
 class GeneratorTest {
     private fun seeds(difficulty: Difficulty) = when (difficulty) {
+        Difficulty.TRIVIAL -> 1L..3L
         Difficulty.EASY, Difficulty.MEDIUM -> 1L..40L
         Difficulty.HARD, Difficulty.EXPERT -> 1L..20L
-        Difficulty.FIENDISH -> 1L..8L
+        Difficulty.BRUTAL -> 1L..8L
     }
 
     @Test
@@ -28,7 +29,9 @@ class GeneratorTest {
                 val puzzle = generated.puzzle
                 val validation = Validator.validate(puzzle, generated.solution)
                 assertTrue("$difficulty seed $seed: $validation", validation.isValid)
-                assertTrue("$difficulty seed $seed has no symbols", puzzle.mechanics().isNotEmpty())
+                if (difficulty != Difficulty.TRIVIAL) {
+                    assertTrue("$difficulty seed $seed has no symbols", puzzle.mechanics().isNotEmpty())
+                }
                 val count = generated.solutionCount
                 if (count == null) {
                     unknownCounts++
@@ -94,6 +97,16 @@ class GeneratorTest {
     @Test
     fun presetsUseTheirGridSizes() {
         assertEquals(3, Generator.generate(Difficulty.EASY, 7).puzzle.width)
-        assertEquals(6, Generator.generate(Difficulty.FIENDISH, 7).puzzle.width)
+        assertEquals(6, Generator.generate(Difficulty.BRUTAL, 7).puzzle.width)
+    }
+
+    @Test
+    fun trivialIsAStraightLine() {
+        val generated = Generator.generate(Difficulty.TRIVIAL, 7)
+        val puzzle = generated.puzzle
+        assertEquals(0, puzzle.height)
+        assertTrue(puzzle.mechanics().isEmpty())
+        assertEquals(listOf(generated.solution), Solver.solve(puzzle, maxSolutions = 10).solutions)
+        assertTrue(generated.solution.all { it.y == 0 })
     }
 }

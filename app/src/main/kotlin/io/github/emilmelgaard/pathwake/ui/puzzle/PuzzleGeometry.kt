@@ -6,6 +6,7 @@ import io.github.emilmelgaard.pathwake.puzzle.Direction
 import io.github.emilmelgaard.pathwake.puzzle.PathTracer
 import io.github.emilmelgaard.pathwake.puzzle.Pos
 import io.github.emilmelgaard.pathwake.puzzle.Puzzle
+import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -13,12 +14,17 @@ import kotlin.math.min
  * [width] x [height] pixel area.
  */
 internal class PuzzleGeometry(puzzle: Puzzle, width: Float, height: Float) {
+    // A single straight track (one dimension 0) sits in the middle of a square panel, like a door panel.
+    private val straight = puzzle.width == 0 || puzzle.height == 0
+    private val panelWidthUnits = (if (straight) max(puzzle.width, puzzle.height) else puzzle.width) + 2 * MARGIN
+    private val panelHeightUnits = (if (straight) max(puzzle.width, puzzle.height) else puzzle.height) + 2 * MARGIN
+
     /** Pixels per node unit. */
-    val unit: Float = min(width / (puzzle.width + 2 * MARGIN), height / (puzzle.height + 2 * MARGIN))
-    val panelSize = Size(unit * (puzzle.width + 2 * MARGIN), unit * (puzzle.height + 2 * MARGIN))
+    val unit: Float = min(width / panelWidthUnits, height / panelHeightUnits)
+    val panelSize = Size(unit * panelWidthUnits, unit * panelHeightUnits)
     val panelTopLeft = Offset((width - panelSize.width) / 2, (height - panelSize.height) / 2)
-    private val originX = panelTopLeft.x + MARGIN * unit
-    private val originY = panelTopLeft.y + MARGIN * unit
+    private val originX = width / 2 - puzzle.width * unit / 2
+    private val originY = height / 2 - puzzle.height * unit / 2
 
     fun toPx(x: Float, y: Float) = Offset(originX + x * unit, originY + y * unit)
 

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import io.github.emilmelgaard.pathwake.alarm.SchedulerState
+import io.github.emilmelgaard.pathwake.data.difficultyOf
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import io.github.emilmelgaard.pathwake.ring.RingingSession
 import io.github.emilmelgaard.pathwake.ring.RingingSessionStore
@@ -58,7 +59,7 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
             } else {
                 null
             },
-            difficulty = Difficulty.valueOf(preferences.getString(DIFFICULTY, null)!!),
+            difficulty = difficultyOf(preferences.getString(DIFFICULTY, null))!!,
             puzzleCount = preferences.getInt(PUZZLE_COUNT, 1),
             solved = preferences.getInt(SOLVED, 0),
             seed = preferences.getLong(SEED, 0),

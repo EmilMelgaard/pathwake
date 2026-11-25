@@ -15,10 +15,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -41,18 +45,22 @@ import io.github.emilmelgaard.pathwake.R
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import io.github.emilmelgaard.pathwake.puzzle.Generator
 import io.github.emilmelgaard.pathwake.puzzle.Mechanic
+import io.github.emilmelgaard.pathwake.ui.common.difficultyName
 import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzleLook
 import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzlePanel
 import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
 
 @Composable
 fun PlaygroundScreen(
+    initialDifficulty: Difficulty,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: PlaygroundViewModel = viewModel { PlaygroundViewModel() }
+    viewModel: PlaygroundViewModel = viewModel { PlaygroundViewModel(initialDifficulty) }
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     PlaygroundScreen(
         state = state,
+        onBack = onBack,
         onSelectDifficulty = viewModel::selectDifficulty,
         onSelectLook = viewModel::selectLook,
         onNewPuzzle = viewModel::newPuzzle,
@@ -66,6 +74,7 @@ fun PlaygroundScreen(
 @Composable
 internal fun PlaygroundScreen(
     state: PlaygroundUiState,
+    onBack: () -> Unit,
     onSelectDifficulty: (Difficulty) -> Unit,
     onSelectLook: (PuzzleLook) -> Unit,
     onNewPuzzle: () -> Unit,
@@ -75,7 +84,16 @@ internal fun PlaygroundScreen(
 ) {
     Scaffold(
         modifier = modifier,
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.playground_title)) }) }
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.playground_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back))
+                    }
+                }
+            )
+        }
     ) { padding ->
         BoxWithConstraints(Modifier.fillMaxSize().padding(padding)) {
             val controls = @Composable { controlsModifier: Modifier ->
@@ -122,7 +140,7 @@ private fun PlaygroundControls(
                 FilterChip(
                     selected = difficulty == state.difficulty,
                     onClick = { onSelectDifficulty(difficulty) },
-                    label = { Text(stringResource(difficulty.label)) }
+                    label = { Text(difficultyName(difficulty)) }
                 )
             }
         }
@@ -203,16 +221,6 @@ private fun PuzzleArea(state: PlaygroundUiState, onSolved: () -> Unit, modifier:
 internal const val PUZZLE_TAG = "puzzle"
 
 @get:StringRes
-private val Difficulty.label: Int
-    get() = when (this) {
-        Difficulty.EASY -> R.string.difficulty_easy
-        Difficulty.MEDIUM -> R.string.difficulty_medium
-        Difficulty.HARD -> R.string.difficulty_hard
-        Difficulty.EXPERT -> R.string.difficulty_expert
-        Difficulty.FIENDISH -> R.string.difficulty_fiendish
-    }
-
-@get:StringRes
 private val PuzzleLook.label: Int
     get() = when (this) {
         PuzzleLook.PANEL -> R.string.look_panel
@@ -246,6 +254,7 @@ private fun PlaygroundScreenPreview() {
                 generating = false,
                 solvedCount = 2
             ),
+            onBack = {},
             onSelectDifficulty = {},
             onSelectLook = {},
             onNewPuzzle = {},

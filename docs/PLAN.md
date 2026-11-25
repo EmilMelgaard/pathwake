@@ -37,7 +37,9 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
 - **`:app`**: Compose UI, data and alarm engine.
   - UI: Material 3, adaptive layouts (list-detail on tablets via Navigation 3 scenes), puzzle panel drawn on a
     `Canvas`.
-  - Data: Room (alarms), DataStore (settings), manual dependency injection via an `AppContainer` (no Hilt).
+  - Data: Room 2.8 (alarms), DataStore (settings), manual dependency injection via an `AppContainer` (no Hilt).
+    The database lives in device-protected storage so alarms can be rescheduled after a reboot before the user
+    unlocks the device (direct boot).
   - Alarm engine:
     - Scheduling: `AlarmManager.setAlarmClock()` with `USE_EXACT_ALARM`. Alarms are rescheduled on boot (direct-boot
       aware), time change, time-zone change and app update.
@@ -73,7 +75,7 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
        Each run is capped at 2.5M solver steps.
      - Easy and Medium solution counts are exact. For larger puzzles where uniqueness can't be proven within budget,
        the generator accepts the puzzle once randomized probes find no alternative solution ("few solutions").
-2. **Advanced mechanics and difficulty calibration** *(in review)*
+2. **Advanced mechanics and difficulty calibration** *(done, #3)*
    - Tetris (fixed/rotatable), subtractive tetris, elimination, symmetry.
    - Solver-checked generation, 5 calibrated presets, generation-time budget on low-end devices.
    - *Feedback on:* difficulty curve.
@@ -95,12 +97,20 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
      - All levels draw from the base mechanics: dots, squares, stars, triangles, tetris.
    - Caps: at most 8 stars and 2 elimination marks per puzzle.
    - Generation on desktop: Hard averages ~85 ms, Expert ~165 ms, Fiendish ~285 ms (max < 1 s).
-3. **Alarm management**
+3. **Alarm management** *(in review)*
    - Room data model and next-occurrence calculation (repeat days, dates, pauses, skip, DST/time zones), fully
      unit-tested.
    - Alarm list and editor (adaptive list-detail on tablets).
    - No ringing yet.
    - *Feedback on:* UX.
+   - Decisions:
+     - Alarms repeat on weekdays, or ring once: on a picked date, or else at the next occurrence of their time.
+       Pauses and "skip next" only apply to repeating alarms.
+     - Times in a DST gap ring after the gap (02:30 becomes 03:30); in an overlap they ring at the first 02:30.
+     - The editor has an explicit Save, which also turns the alarm on. Leaving with unsaved changes asks first.
+     - Deleting shows an Undo snackbar. Duplicating copies everything except a skipped day.
+     - The list highlights the open alarm on tablets; the playground is reachable from the list ("Try puzzles") and
+       from the editor ("Try a puzzle" at the alarm's difficulty).
 4. **Alarm engine**
    - Scheduling, reboot and time-change handling, direct boot.
    - Ringing service and lock-screen ringing activity with N puzzles, "new puzzle", auto-silence.

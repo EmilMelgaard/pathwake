@@ -10,7 +10,14 @@ one chunk per branch + pull request; keep the plan updated when decisions change
 
 - Modules:
   - `:app`: Kotlin + Jetpack Compose + Material 3 + Navigation 3. AGP 9 built-in Kotlin
-    (do **not** add the `org.jetbrains.kotlin.android` plugin).
+    (do **not** add the `org.jetbrains.kotlin.android` plugin). Packages:
+    - `alarm`: the `Alarm` model and `AlarmSchedule` (pure next-occurrence logic, unit-tested).
+    - `data`: Room 2.8 (KSP, exported schemas in `app/schemas`) behind `AlarmRepository`; device-protected storage.
+    - `ui`: one package per screen with a ViewModel; `ui/common` has formatting, the app-wide `Messenger`
+      (snackbars) and the `UnsavedChangesGuard`. `Navigation.kt` uses the Material 3 list-detail scene strategy.
+    - `PathwakeApplication` holds the `AppContainer` (manual DI). ViewModels take the repository and a `now` clock.
+  - The app's minSdk is 29 without core library desugaring: avoid `java.time`/JDK APIs newer than Java 8 + API 29
+    (lint's NewApi check catches them, e.g. `Duration.toHoursPart()`).
   - `:puzzle`: pure Kotlin/JVM puzzle engine (model, `Validator`, `Solver`, `Generator`, `PathTracer`).
     No Android dependencies. It compiles against the JDK 17 API so nothing JDK 21-only reaches Android.
 - Puzzle positions use a doubled grid (`Pos`): even/even = nodes, odd/odd = cells, mixed = edges. All rule logic lives

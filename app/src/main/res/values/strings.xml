@@ -37,4 +37,87 @@
     <string name="mechanic_elimination">Elimination</string>
     <string name="mechanic_symmetry">Symmetry</string>
     <string name="mechanic_multiple_starts_exits">Multiple starts/exits</string>
+    <string name="back">Back</string>
+
+    <!-- Alarm list -->
+    <string name="add_alarm">Add alarm</string>
+    <string name="try_puzzles">Try puzzles</string>
+    <string name="next_alarm">Next alarm</string>
+    <string name="no_alarms_on">No alarms on</string>
+    <string name="no_alarms_title">No alarms yet</string>
+    <string name="no_alarms_body">Add an alarm. To turn it off, you\'ll have to solve a puzzle. There is no snooze.</string>
+    <string name="select_alarm">Select an alarm to edit it, or add a new one.</string>
+    <!-- Content description of an alarm's on/off switch. Example: "Alarm at 07:00" -->
+    <string name="alarm_switch">Alarm at %1$s</string>
+    <string name="more_options">More options</string>
+    <string name="skip_next">Skip next alarm</string>
+    <string name="cancel_skip">Don\'t skip</string>
+    <string name="duplicate">Duplicate</string>
+    <string name="delete">Delete</string>
+    <string name="alarm_deleted">Alarm deleted</string>
+    <string name="undo">Undo</string>
+    <!-- Example: "Skipping Fri, 12 Dec" -->
+    <string name="skipping_on">Skipping %1$s</string>
+    <!-- Example: "Paused Fri, 12 Dec – Sun, 21 Dec" -->
+    <string name="paused_range">Paused %1$s – %2$s</string>
+    <string name="wont_ring">Won\'t ring</string>
+    <string name="every_day">Every day</string>
+    <string name="weekdays">Weekdays</string>
+    <string name="weekends">Weekends</string>
+    <string name="once">Once</string>
+    <!-- Example: "Once, Fri, 12 Dec" -->
+    <string name="once_on">Once, %1$s</string>
+    <!-- Example: "Hard · 2 puzzles" -->
+    <string name="puzzle_summary">%1$s · %2$s</string>
+    <plurals name="puzzles">
+        <item quantity="one">%1$d puzzle</item>
+        <item quantity="other">%1$d puzzles</item>
+    </plurals>
+
+    <!-- Times -->
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    <!-- Example: "in 7 h 30 min" -->
+    <string name="in_time">in %1$s</string>
+    <string name="in_less_than_a_minute">in less than a minute</string>
+    <plurals name="days_count">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="hours_short">%1$d h</string>
+    <string name="minutes_short">%1$d min</string>
+
+    <!-- Alarm editor -->
+    <string name="new_alarm">New alarm</string>
+    <string name="edit_alarm">Edit alarm</string>
+    <string name="close">Close</string>
+    <string name="save">Save</string>
+    <string name="delete_alarm">Delete alarm</string>
+    <!-- Content description of the alarm time. Example: "07:00, change time" -->
+    <string name="change_time">%1$s, change time</string>
+    <!-- Example: "Tomorrow 07:00 · in 8 h" -->
+    <string name="rings_at">%1$s · %2$s</string>
+    <string name="label">Label</string>
+    <string name="repeat">Repeat</string>
+    <string name="pick_date">Pick a date</string>
+    <string name="clear_date">Clear date</string>
+    <string name="pauses">Pauses</string>
+    <string name="pauses_hint">The alarm doesn\'t ring on these days, e.g. during a vacation.</string>
+    <string name="add_pause">Add pause</string>
+    <!-- Example: "Fri, 12 Dec – Sun, 21 Dec" -->
+    <string name="date_range">%1$s – %2$s</string>
+    <!-- Content description of a pause chip. Example: "Remove pause Fri, 12 Dec – Sun, 21 Dec" -->
+    <string name="remove_pause">Remove pause %1$s</string>
+    <string name="puzzles_title">Puzzles</string>
+    <string name="puzzles_to_solve">Puzzles to solve</string>
+    <string name="fewer_puzzles">Fewer puzzles</string>
+    <string name="more_puzzles">More puzzles</string>
+    <string name="try_puzzle">Try a puzzle</string>
+    <!-- Example: "Alarm set to ring in 7 h 30 min" -->
+    <string name="alarm_set">Alarm set to ring %1$s</string>
+    <string name="alarm_saved">Alarm saved</string>
+    <string name="discard_changes_title">Discard changes?</string>
+    <string name="discard_changes_body">Your changes to this alarm haven\'t been saved.</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep editing</string>
 </resources>

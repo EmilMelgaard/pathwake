@@ -1,6 +1,7 @@
 package io.github.emilmelgaard.pathwake.data
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Dao
 import androidx.room.Database
 import androidx.room.Insert
@@ -33,7 +34,15 @@ interface AlarmDao {
     suspend fun delete(id: Long)
 }
 
-@Database(entities = [AlarmEntity::class], version = 1, exportSchema = true)
+@Database(
+    entities = [AlarmEntity::class],
+    version = 2,
+    exportSchema = true,
+    autoMigrations = [
+        // 2: auto_silence_minutes
+        AutoMigration(from = 1, to = 2)
+    ]
+)
 abstract class PathwakeDatabase : RoomDatabase() {
     abstract fun alarmDao(): AlarmDao
 

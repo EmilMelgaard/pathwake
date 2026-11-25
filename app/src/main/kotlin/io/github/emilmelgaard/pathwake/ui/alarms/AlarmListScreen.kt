@@ -1,5 +1,8 @@
 package io.github.emilmelgaard.pathwake.ui.alarms
 
+import androidx.activity.compose.LocalActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -18,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,6 +37,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,11 +54,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.emilmelgaard.pathwake.R
 import io.github.emilmelgaard.pathwake.alarm.Alarm
 import io.github.emilmelgaard.pathwake.appContainer
+import io.github.emilmelgaard.pathwake.system.AlarmPermission
+import io.github.emilmelgaard.pathwake.system.AlarmPermissions
 import io.github.emilmelgaard.pathwake.ui.common.LocalMessenger
 import io.github.emilmelgaard.pathwake.ui.common.formatCountdown
 import io.github.emilmelgaard.pathwake.ui.common.formatDate
@@ -61,6 +69,7 @@ import io.github.emilmelgaard.pathwake.ui.common.formatTime
 import io.github.emilmelgaard.pathwake.ui.common.formatWhen
 import io.github.emilmelgaard.pathwake.ui.common.puzzleText
 import io.github.emilmelgaard.pathwake.ui.common.repeatText
+import io.github.emilmelgaard.pathwake.ui.ringing.RingingActivity
 
 /** Callbacks of the alarm list. */
 data class AlarmListActions(
@@ -71,7 +80,22 @@ data class AlarmListActions(
     val onSkipNext: (Alarm) -> Unit = {},
     val onCancelSkip: (Alarm) -> Unit = {},
     val onDuplicate: (Alarm) -> Unit = {},
-    val onDelete: (Alarm) -> Unit = {}
+    val onDelete: (Alarm) -> Unit = {},
+    val onOpenRinging: () -> Unit = {},
+    val onFixPermission: (AlarmPermission) -> Unit = {}
+)
+
+/**
+ * Things the user should act on, shown above the list.
+ *
+ * @property ringing an alarm is ringing.
+ * @property missingPermissions permissions alarms need but don't have.
+ * @property canRequestNotifications the notification permission can be granted in a dialog rather than in settings.
+ */
+data class AlarmListNotices(
+    val ringing: Boolean = false,
+    val missingPermissions: List<AlarmPermission> = emptyList(),
+    val canRequestNotifications: Boolean = false
 )
 
 @Composable
@@ -89,9 +113,36 @@ fun AlarmListScreen(
     val messenger = LocalMessenger.current
     val deleted = stringResource(R.string.alarm_deleted)
     val undo = stringResource(R.string.undo)
+    val context = LocalContext.current
+    val activity = LocalActivity.current
+    val ringing by container.ringing.session.collectAsStateWithLifecycle()
+
+    fun currentPermissionNotices() = AlarmListNotices(
+        missingPermissions = AlarmPermissions.missing(container.notifications, container.exactAlarms),
+        // After a second refusal, Android no longer shows the dialog: then the button opens settings instead.
+        canRequestNotifications = AlarmPermissions.needsNotificationPermission(context) && (
+            !container.preferences.notificationPermissionRequested ||
+                AlarmPermissions.shouldShowNotificationRationale(activity)
+            )
+    )
+    var permissionNotices by remember { mutableStateOf(currentPermissionNotices()) }
+    LifecycleResumeEffect(Unit) {
+        permissionNotices = currentPermissionNotices()
+        onPauseOrDispose { }
+    }
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        permissionNotices = currentPermissionNotices()
+    }
+
     AlarmListContent(
         state = state,
         selectedAlarmId = selectedAlarmId,
+        notices = permissionNotices.copy(
+            ringing = ringing != null,
+            // Only nag about permissions once there is an alarm that needs them.
+            missingPermissions = permissionNotices.missingPermissions.takeIf { state.items.any { it.alarm.enabled } }
+                .orEmpty()
+        ),
         actions = AlarmListActions(
             onOpen = { onOpenAlarm(it.id) },
             onAdd = onAddAlarm,
@@ -104,6 +155,15 @@ fun AlarmListScreen(
                 viewModel.delete(alarm)
                 onAlarmDeleted(alarm.id)
                 messenger.show(deleted, undo) { container.alarmRepository.restore(alarm) }
+            },
+            onOpenRinging = { context.startActivity(RingingActivity.intent(context)) },
+            onFixPermission = { permission ->
+                if (permission == AlarmPermission.NOTIFICATIONS && permissionNotices.canRequestNotifications) {
+                    container.preferences.notificationPermissionRequested = true
+                    AlarmPermissions.requestNotifications(notificationPermission)
+                } else {
+                    context.startActivity(AlarmPermissions.settingsIntent(context, permission))
+                }
             }
         ),
         snackbarHostState = messenger.hostState,
@@ -118,6 +178,7 @@ fun AlarmListContent(
     selectedAlarmId: Long?,
     actions: AlarmListActions,
     modifier: Modifier = Modifier,
+    notices: AlarmListNotices = AlarmListNotices(),
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() }
 ) {
     Scaffold(
@@ -141,24 +202,72 @@ fun AlarmListContent(
             )
         }
     ) { padding ->
-        when {
-            state.loading -> Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) {
-                CircularProgressIndicator()
+        Column(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding())) {
+            Notices(notices, actions)
+            when {
+                state.loading -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
+
+                state.items.isEmpty() -> EmptyAlarms(
+                    Modifier.fillMaxSize().padding(bottom = padding.calculateBottomPadding())
+                )
+
+                else -> LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag(ALARM_LIST_TAG),
+                    contentPadding = PaddingValues(bottom = padding.calculateBottomPadding() + 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item { NextAlarmHeader(state) }
+                    items(state.items, key = { it.alarm.id }) { item ->
+                        AlarmCard(item, selected = item.alarm.id == selectedAlarmId, actions = actions)
+                    }
+                }
             }
+        }
+    }
+}
 
-            state.items.isEmpty() -> EmptyAlarms(Modifier.fillMaxSize().padding(padding))
-
-            else -> LazyColumn(
-                modifier = Modifier.fillMaxSize().testTag(ALARM_LIST_TAG),
-                contentPadding = PaddingValues(
-                    top = padding.calculateTopPadding(),
-                    bottom = padding.calculateBottomPadding() + 96.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                item { NextAlarmHeader(state) }
-                items(state.items, key = { it.alarm.id }) { item ->
-                    AlarmCard(item, selected = item.alarm.id == selectedAlarmId, actions = actions)
+@Composable
+private fun Notices(notices: AlarmListNotices, actions: AlarmListActions) {
+    if (notices.ringing) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    stringResource(R.string.alarm_ringing),
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f)
+                )
+                Button(onClick = actions.onOpenRinging) { Text(stringResource(R.string.solve_puzzles)) }
+            }
+        }
+    }
+    if (notices.missingPermissions.isNotEmpty()) {
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).testTag(PERMISSIONS_TAG)
+        ) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.permissions_title), style = MaterialTheme.typography.titleMedium)
+                notices.missingPermissions.forEach { permission ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            stringResource(
+                                when (permission) {
+                                    AlarmPermission.NOTIFICATIONS -> R.string.permission_notifications
+                                    AlarmPermission.EXACT_ALARMS -> R.string.permission_exact_alarms
+                                    AlarmPermission.FULL_SCREEN -> R.string.permission_full_screen
+                                }
+                            ),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f)
+                        )
+                        val allow = permission == AlarmPermission.NOTIFICATIONS && notices.canRequestNotifications
+                        TextButton(onClick = { actions.onFixPermission(permission) }) {
+                            Text(stringResource(if (allow) R.string.allow else R.string.open_settings))
+                        }
+                    }
                 }
             }
         }
@@ -339,3 +448,4 @@ fun AlarmDetailPlaceholder(modifier: Modifier = Modifier) {
 }
 
 internal const val ALARM_LIST_TAG = "alarmList"
+internal const val PERMISSIONS_TAG = "permissions"

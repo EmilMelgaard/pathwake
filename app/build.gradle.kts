@@ -131,5 +131,8 @@ dependencies {
     // Navigation
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.navigation3.runtime)
+    // Navigation keys are @Serializable. Explicit, because Room's migration tests need a newer version than the
+    // one the AndroidX libraries bring in.
+    implementation(libs.kotlinx.serialization.core)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
 }

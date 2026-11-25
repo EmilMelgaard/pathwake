@@ -44,6 +44,11 @@ To build a signed release locally, add the same values to `~/.gradle/gradle.prop
 3. Push the first tag, download the AAB from the workflow run's artifacts, and upload it **manually** to the
    internal testing track (the Play API can only publish to apps that already have an upload).
 4. Complete the store listing, content rating, target audience and Data safety form, and add a privacy policy URL.
+5. Under Policy > App content, declare the alarm permissions (all are core alarm-clock functionality):
+   - **Exact alarms** (`USE_EXACT_ALARM`): the app is an alarm clock; alarms must ring at the time the user set.
+   - **Full-screen intent** (`USE_FULL_SCREEN_INTENT`): a ringing alarm shows its puzzles over the lock screen.
+   - **Foreground service** (`systemExempted`): the alarm rings (sound, vibration) until its puzzles are solved or
+     it times out. If Play Console asks for a video, record an alarm ringing on a locked device.
 
 ### 4. Automated Play uploads
 

@@ -150,4 +150,67 @@ class AlarmScheduleTest {
         assertEquals(Duration.ofMinutes(1), AlarmSchedule.timeUntil(at("2026-11-25", "07:00"), now))
         assertEquals(Duration.ofHours(24), AlarmSchedule.timeUntil(at("2026-11-26", "06:59:30"), now))
     }
+
+    @Test
+    fun dueAt_findsEveryAlarmRingingAtThatTime() {
+        val work = seven.copy(id = 1, repeatDays = AlarmSchedule.WEEKDAYS)
+        val once = seven.copy(id = 2)
+        val skipping = seven.copy(
+            id = 3,
+            repeatDays = AlarmSchedule.WEEKDAYS,
+            skippedDate = LocalDate.parse("2026-11-25")
+        )
+        val later = seven.copy(id = 4, time = LocalTime.of(7, 30))
+        val off = seven.copy(id = 5, enabled = false)
+
+        val due = AlarmSchedule.dueAt(listOf(work, once, skipping, later, off), at("2026-11-25", "07:00"))
+
+        assertEquals(listOf(1L, 2L), due.map { it.id })
+    }
+
+    @Test
+    fun afterRinging_turnsOneTimeAlarmsOffAndKeepsRepeatingOnes() {
+        val now = at("2026-11-25", "07:00")
+        assertFalse(AlarmSchedule.afterRinging(seven, now).enabled)
+
+        val weekdays = seven.copy(
+            repeatDays = AlarmSchedule.WEEKDAYS,
+            pauses = listOf(DateRange(LocalDate.parse("2026-11-01"), LocalDate.parse("2026-11-20")))
+        )
+        val after = AlarmSchedule.afterRinging(weekdays, now)
+        assertTrue(after.enabled)
+        assertTrue(after.pauses.isEmpty())
+        assertEquals(at("2026-11-26", "07:00"), next(after, now))
+    }
+
+    @Test
+    fun occurrencesBetween_listsEachRingOnceInOrder() {
+        val once = seven.copy(id = 1)
+        val daily = seven.copy(id = 2, time = LocalTime.of(6, 30), repeatDays = DayOfWeek.entries.toSet())
+
+        val occurrences = AlarmSchedule.occurrencesBetween(
+            listOf(once, daily),
+            from = at("2026-11-25", "06:30"),
+            until = at("2026-11-26", "08:00")
+        )
+
+        assertEquals(
+            listOf(
+                at("2026-11-25", "06:30") to listOf(2L),
+                at("2026-11-25", "07:00") to listOf(1L),
+                at("2026-11-26", "06:30") to listOf(2L)
+            ),
+            occurrences.map { it.at to it.alarms.map(Alarm::id) }
+        )
+    }
+
+    @Test
+    fun occurrencesBetween_isEmptyWhenNothingRings() {
+        val occurrences = AlarmSchedule.occurrencesBetween(
+            listOf(seven),
+            from = at("2026-11-25", "07:01"),
+            until = at("2026-11-25", "08:00")
+        )
+        assertTrue(occurrences.isEmpty())
+    }
 }

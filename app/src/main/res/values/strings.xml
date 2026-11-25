@@ -113,6 +113,14 @@
     <string name="fewer_puzzles">Fewer puzzles</string>
     <string name="more_puzzles">More puzzles</string>
     <string name="try_puzzle">Try a puzzle</string>
+    <string name="ringing_title">Ringing</string>
+    <string name="auto_silence">Stop ringing</string>
+    <string name="auto_silence_hint">If the puzzles aren\'t solved by then</string>
+    <string name="auto_silence_never">Never</string>
+    <plurals name="auto_silence_after">
+        <item quantity="one">After %1$d minute</item>
+        <item quantity="other">After %1$d minutes</item>
+    </plurals>
     <!-- Example: "Alarm set to ring in 7 h 30 min" -->
     <string name="alarm_set">Alarm set to ring %1$s</string>
     <string name="alarm_saved">Alarm saved</string>
@@ -120,4 +128,33 @@
     <string name="discard_changes_body">Your changes to this alarm haven\'t been saved.</string>
     <string name="discard">Discard</string>
     <string name="keep_editing">Keep editing</string>
+
+    <!-- Ringing -->
+    <string name="alarm">Alarm</string>
+    <!-- Example: "07:00 · Work" -->
+    <string name="time_and_label">%1$s · %2$s</string>
+    <plurals name="ringing_solve_to_stop">
+        <item quantity="one">Solve the puzzle to stop the alarm</item>
+        <item quantity="other">Solve %1$d puzzles to stop the alarm</item>
+    </plurals>
+    <!-- Example: "Puzzle 2 of 3" -->
+    <string name="ringing_progress">Puzzle %1$d of %2$d</string>
+    <string name="solve_puzzles">Solve puzzles</string>
+    <string name="alarm_ringing">Alarm ringing</string>
+    <string name="channel_ringing">Ringing alarms</string>
+    <string name="channel_missed">Missed alarms</string>
+    <string name="missed_alarm">Missed alarm</string>
+    <!-- Example: "07:00 · Work stopped ringing after 10 minutes" -->
+    <plurals name="missed_silenced">
+        <item quantity="one">%1$s stopped ringing after %2$d minute</item>
+        <item quantity="other">%1$s stopped ringing after %2$d minutes</item>
+    </plurals>
+
+    <!-- Permissions -->
+    <string name="permissions_title">Alarms might not work</string>
+    <string name="permission_notifications">Allow notifications, so a ringing alarm can show its puzzles.</string>
+    <string name="permission_exact_alarms">Allow alarms and reminders, so alarms ring on time.</string>
+    <string name="permission_full_screen">Allow full-screen notifications, so the puzzles appear when the device is locked.</string>
+    <string name="allow">Allow</string>
+    <string name="open_settings">Open settings</string>
 </resources>

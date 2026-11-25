@@ -24,7 +24,9 @@ data class AlarmEntity(
     val pauses: String,
     @ColumnInfo(name = "skipped_epoch_day") val skippedEpochDay: Long?,
     val difficulty: String,
-    @ColumnInfo(name = "puzzle_count") val puzzleCount: Int
+    @ColumnInfo(name = "puzzle_count") val puzzleCount: Int,
+    /** Null: never auto-silence. */
+    @ColumnInfo(name = "auto_silence_minutes", defaultValue = "10") val autoSilenceMinutes: Int?
 )
 
 fun Alarm.toEntity() = AlarmEntity(
@@ -38,7 +40,8 @@ fun Alarm.toEntity() = AlarmEntity(
     pauses = pauses.joinToString(";") { "${it.start}..${it.end}" },
     skippedEpochDay = skippedDate?.toEpochDay(),
     difficulty = difficulty.name,
-    puzzleCount = puzzleCount
+    puzzleCount = puzzleCount,
+    autoSilenceMinutes = autoSilenceMinutes
 )
 
 fun AlarmEntity.toAlarm() = Alarm(
@@ -51,7 +54,8 @@ fun AlarmEntity.toAlarm() = Alarm(
     pauses = pauses.split(';').filter { it.isNotBlank() }.mapNotNull(::parseRange),
     skippedDate = skippedEpochDay?.let(LocalDate::ofEpochDay),
     difficulty = Difficulty.entries.firstOrNull { it.name == difficulty } ?: Difficulty.MEDIUM,
-    puzzleCount = puzzleCount.coerceIn(1, Alarm.MAX_PUZZLES)
+    puzzleCount = puzzleCount.coerceIn(1, Alarm.MAX_PUZZLES),
+    autoSilenceMinutes = autoSilenceMinutes?.takeIf { it > 0 }
 )
 
 private fun parseRange(text: String): DateRange? = runCatching {

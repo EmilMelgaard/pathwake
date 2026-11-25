@@ -1,5 +1,6 @@
 package io.github.emilmelgaard.pathwake.ui.common
 
+import android.content.Context
 import android.content.res.Resources
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
@@ -57,12 +58,18 @@ fun currentLocale(): Locale = LocalConfiguration.current.locales[0]
 @ReadOnlyComposable
 fun firstDayOfWeek(): DayOfWeek = WeekFields.of(currentLocale()).firstDayOfWeek
 
+/** The time in the user's 12/24-hour format, e.g. "07:00" or "7:00 AM". */
+fun Context.formatTime(time: LocalTime): String {
+    val locale = resources.configuration.locales[0]
+    val pattern = DateFormat.getBestDateTimePattern(locale, if (DateFormat.is24HourFormat(this)) "Hm" else "hm")
+    return time.format(DateTimeFormatter.ofPattern(pattern, locale))
+}
+
 @Composable
 fun formatTime(time: LocalTime): String {
-    val locale = currentLocale()
-    val is24Hour = DateFormat.is24HourFormat(LocalContext.current)
-    val pattern = DateFormat.getBestDateTimePattern(locale, if (is24Hour) "Hm" else "hm")
-    return time.format(DateTimeFormatter.ofPattern(pattern, locale))
+    // Read the configuration so the text updates when the locale changes.
+    currentLocale()
+    return LocalContext.current.formatTime(time)
 }
 
 @Composable

@@ -1,0 +1,38 @@
+package io.github.emilmelgaard.pathwake.data
+
+import androidx.room.testing.MigrationTestHelper
+import androidx.test.platform.app.InstrumentationRegistry
+import org.junit.Assert.assertEquals
+import org.junit.Rule
+import org.junit.Test
+
+class MigrationTest {
+    @get:Rule
+    val helper = MigrationTestHelper(InstrumentationRegistry.getInstrumentation(), PathwakeDatabase::class.java)
+
+    @Test
+    fun version1To2_keepsAlarmsAndSilencesThemAfterTenMinutes() {
+        helper.createDatabase(DB, 1).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO alarms (id, hour, minute, label, enabled, repeat_days, date_epoch_day, pauses,
+                    skipped_epoch_day, difficulty, puzzle_count)
+                VALUES (7, 6, 45, 'Work', 1, 31, NULL, '', NULL, 'HARD', 2)
+                """.trimIndent()
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 2, true).use { db ->
+            db.query("SELECT label, puzzle_count, auto_silence_minutes FROM alarms WHERE id = 7").use { row ->
+                row.moveToFirst()
+                assertEquals("Work", row.getString(0))
+                assertEquals(2, row.getInt(1))
+                assertEquals(10, row.getInt(2))
+            }
+        }
+    }
+
+    private companion object {
+        const val DB = "migration-test.db"
+    }
+}

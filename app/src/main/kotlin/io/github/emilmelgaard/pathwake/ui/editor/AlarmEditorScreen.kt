@@ -2,6 +2,8 @@ package io.github.emilmelgaard.pathwake.ui.editor
 
 import android.text.format.DateFormat
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +31,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenu
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -74,6 +81,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -88,6 +96,7 @@ import io.github.emilmelgaard.pathwake.alarm.Alarm
 import io.github.emilmelgaard.pathwake.alarm.DateRange
 import io.github.emilmelgaard.pathwake.appContainer
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
+import io.github.emilmelgaard.pathwake.system.AlarmPermissions
 import io.github.emilmelgaard.pathwake.ui.common.LocalMessenger
 import io.github.emilmelgaard.pathwake.ui.common.LocalUnsavedChangesGuard
 import io.github.emilmelgaard.pathwake.ui.common.countdown
@@ -121,7 +130,8 @@ data class AlarmEditorActions(
     val onRemovePause: (DateRange) -> Unit = {},
     val onSkipNextChange: (Boolean) -> Unit = {},
     val onDifficultyChange: (Difficulty) -> Unit = {},
-    val onPuzzleCountChange: (Int) -> Unit = {}
+    val onPuzzleCountChange: (Int) -> Unit = {},
+    val onAutoSilenceChange: (Int?) -> Unit = {}
 )
 
 @Composable
@@ -145,18 +155,33 @@ fun AlarmEditorScreen(
     LaunchedEffect(state.missing) { if (state.missing) onClose() }
     BackHandler(enabled = state.isDirty) { guard.runOrConfirm(onClose) }
 
+    fun save() = viewModel.save { saved ->
+        guard.hasUnsavedChanges = false
+        messenger.show(
+            saved.timeUntil?.let { resources.getString(R.string.alarm_set, resources.countdown(it)) }
+                ?: resources.getString(R.string.alarm_saved)
+        )
+        onClose()
+    }
+    val context = LocalContext.current
+    // Saves whether or not notifications are allowed; the alarm list explains what is missing.
+    val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        save()
+    }
+
     AlarmEditorContent(
         state = state,
         actions = AlarmEditorActions(
             onClose = { guard.runOrConfirm(onClose) },
             onSave = {
-                viewModel.save { saved ->
-                    guard.hasUnsavedChanges = false
-                    messenger.show(
-                        saved.timeUntil?.let { resources.getString(R.string.alarm_set, resources.countdown(it)) }
-                            ?: resources.getString(R.string.alarm_saved)
-                    )
-                    onClose()
+                // A ringing alarm needs notifications to show its puzzles: ask once, when the first alarm is saved.
+                if (AlarmPermissions.needsNotificationPermission(context) &&
+                    !container.preferences.notificationPermissionRequested
+                ) {
+                    container.preferences.notificationPermissionRequested = true
+                    AlarmPermissions.requestNotifications(notificationPermission)
+                } else {
+                    save()
                 }
             },
             onDelete = {
@@ -177,7 +202,8 @@ fun AlarmEditorScreen(
             onRemovePause = viewModel::removePause,
             onSkipNextChange = viewModel::setSkipNext,
             onDifficultyChange = viewModel::setDifficulty,
-            onPuzzleCountChange = viewModel::setPuzzleCount
+            onPuzzleCountChange = viewModel::setPuzzleCount,
+            onAutoSilenceChange = viewModel::setAutoSilence
         ),
         modifier = modifier
     )
@@ -248,6 +274,8 @@ fun AlarmEditorContent(state: AlarmEditorUiState, actions: AlarmEditorActions, m
                 RepeatSection(state, actions)
                 HorizontalDivider()
                 PuzzleSection(state.alarm, actions)
+                HorizontalDivider()
+                RingingSection(state.alarm, actions)
                 Spacer(Modifier.padding(bottom = 16.dp))
             }
         }
@@ -549,6 +577,49 @@ private fun PuzzleSection(alarm: Alarm, actions: AlarmEditorActions) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RingingSection(alarm: Alarm, actions: AlarmEditorActions) {
+    var expanded by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.ringing_title), style = MaterialTheme.typography.titleMedium)
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+            OutlinedTextField(
+                value = autoSilenceText(alarm.autoSilenceMinutes),
+                onValueChange = {},
+                readOnly = true,
+                singleLine = true,
+                label = { Text(stringResource(R.string.auto_silence)) },
+                supportingText = { Text(stringResource(R.string.auto_silence_hint)) },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .testTag(AUTO_SILENCE_TAG)
+            )
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                Alarm.AUTO_SILENCE_CHOICES.forEach { minutes ->
+                    DropdownMenuItem(
+                        text = { Text(autoSilenceText(minutes)) },
+                        onClick = {
+                            expanded = false
+                            actions.onAutoSilenceChange(minutes)
+                        },
+                        contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun autoSilenceText(minutes: Int?): String = if (minutes == null) {
+    stringResource(R.string.auto_silence_never)
+} else {
+    pluralStringResource(R.plurals.auto_silence_after, minutes, minutes)
+}
+
 private fun LocalDate.toUtcMillis(): Long = atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
 private fun Long.toLocalDate(): LocalDate = Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
@@ -564,3 +635,4 @@ private fun fromDay(today: LocalDate) = object : SelectableDates {
 private const val MAX_LABEL_LENGTH = 60
 internal const val ALARM_EDITOR_TAG = "alarmEditor"
 internal const val PUZZLE_COUNT_TAG = "puzzleCount"
+internal const val AUTO_SILENCE_TAG = "autoSilence"

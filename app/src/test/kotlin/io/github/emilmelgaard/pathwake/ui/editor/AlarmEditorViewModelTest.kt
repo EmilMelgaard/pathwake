@@ -134,6 +134,16 @@ class AlarmEditorViewModelTest {
     }
 
     @Test
+    fun autoSilence_canBeTurnedOff() = runTest(dispatcher) {
+        val viewModel = viewModel(FakeAlarmRepository())
+        assertEquals(Alarm.DEFAULT_AUTO_SILENCE_MINUTES, viewModel.state.alarm.autoSilenceMinutes)
+        viewModel.setAutoSilence(null)
+        assertNull(viewModel.state.alarm.autoSilenceMinutes)
+        viewModel.setAutoSilence(30)
+        assertEquals(30, viewModel.state.alarm.autoSilenceMinutes)
+    }
+
+    @Test
     fun save_storesAnEnabledAlarmAndReportsWhenItRings() = runTest(dispatcher) {
         val repository = FakeAlarmRepository()
         val viewModel = viewModel(repository)

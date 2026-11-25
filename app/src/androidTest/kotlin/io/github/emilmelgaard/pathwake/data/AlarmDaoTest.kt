@@ -44,9 +44,10 @@ class AlarmDaoTest {
             ),
             skippedDate = LocalDate.of(2026, 11, 30),
             difficulty = Difficulty.FIENDISH,
-            puzzleCount = 3
+            puzzleCount = 3,
+            autoSilenceMinutes = null
         )
-        val oneTime = Alarm(time = LocalTime.of(23, 59), date = LocalDate.of(2027, 3, 1))
+        val oneTime = Alarm(time = LocalTime.of(23, 59), date = LocalDate.of(2027, 3, 1), autoSilenceMinutes = 5)
 
         val id = repository.save(alarm)
         val oneTimeId = repository.save(oneTime)

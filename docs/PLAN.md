@@ -41,10 +41,12 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
     The database lives in device-protected storage so alarms can be rescheduled after a reboot before the user
     unlocks the device (direct boot).
   - Alarm engine:
-    - Scheduling: `AlarmManager.setAlarmClock()` with `USE_EXACT_ALARM`. Alarms are rescheduled on boot (direct-boot
-      aware), time change, time-zone change and app update.
-    - Ringing: a foreground service plays `USAGE_ALARM` audio (required on Android 17 for background audio) and posts a
-      full-screen-intent notification that opens the lock-screen ringing activity with the puzzles.
+    - Scheduling: one `AlarmManager.setAlarmClock()` alarm for the next alarm time, with `USE_EXACT_ALARM` (Android 13+)
+      or `SCHEDULE_EXACT_ALARM` (Android 12). Rescheduled after every change, on (locked) boot, time and time-zone
+      changes and app updates. Direct-boot aware: alarms ring after a reboot before the first unlock.
+    - Ringing: a `systemExempted` foreground service (allowed for apps with the exact-alarm permission) plays
+      `USAGE_ALARM` audio, which Android 17's background audio hardening also allows, and posts a full-screen-intent
+      notification that opens the lock-screen ringing activity with the puzzles.
 
 ## Alarm features
 
@@ -97,7 +99,7 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
      - All levels draw from the base mechanics: dots, squares, stars, triangles, tetris.
    - Caps: at most 8 stars and 2 elimination marks per puzzle.
    - Generation on desktop: Hard averages ~85 ms, Expert ~165 ms, Fiendish ~285 ms (max < 1 s).
-3. **Alarm management** *(in review)*
+3. **Alarm management** *(done, #4)*
    - Room data model and next-occurrence calculation (repeat days, dates, pauses, skip, DST/time zones), fully
      unit-tested.
    - Alarm list and editor (adaptive list-detail on tablets).
@@ -111,11 +113,27 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
      - Deleting shows an Undo snackbar. Duplicating copies everything except a skipped day.
      - The list highlights the open alarm on tablets; the playground is reachable from the list ("Try puzzles") and
        from the editor ("Try a puzzle" at the alarm's difficulty).
-4. **Alarm engine**
+4. **Alarm engine** *(in review)*
    - Scheduling, reboot and time-change handling, direct boot.
    - Ringing service and lock-screen ringing activity with N puzzles, "new puzzle", auto-silence.
    - Permission onboarding (notifications, full-screen intent).
    - *Feedback on:* real overnight tests on phone/tablet.
+   - Decisions:
+     - Auto-silence is set per alarm: after 1, 5, 10 (default), 15, 20 or 30 minutes, or never. A silenced alarm
+       leaves a "Missed alarm" notification.
+     - Late alarms behave like the stock Android clock: an alarm that is at most 15 seconds late when the app catches up
+       (device was off, clock changed) still rings; otherwise it shows a "Missed alarm" notification (up to 12 hours
+       back) and one-time alarms turn off.
+     - An alarm cut off while ringing (reboot, crash) rings again until its auto-silence time, with the same puzzle:
+       puzzles are generated from a stored seed. So restarting the device doesn't get around the puzzles.
+     - Alarms due at the same time ring together, with the hardest difficulty, the most puzzles and the longest
+       auto-silence among them. An alarm due while another rings joins it and keeps the progress.
+     - Back doesn't leave the puzzles. Home does, but the alarm keeps ringing; the notification and a banner in the
+       alarm list lead back.
+     - Sound: the system's default alarm sound, looping, with vibration. Before the first unlock after a reboot that
+       sound can't be read, so a bundled tone plays instead. Custom sounds and volume options come in chunk 5.
+     - Permissions: notifications are requested when the first alarm is saved. The alarm list warns (with a button to
+       fix it) when notifications, exact alarms (Android 12) or full-screen intents (Android 14+) are missing.
 5. **Sounds and settings**
    - Tone picker, custom files, gradual volume, vibration, preview.
    - Settings screen: theme, puzzle look, volume while solving, anti-cheat, defaults.

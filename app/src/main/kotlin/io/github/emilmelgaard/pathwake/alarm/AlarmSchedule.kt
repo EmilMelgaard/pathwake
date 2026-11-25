@@ -79,6 +79,39 @@ object AlarmSchedule {
         .mapNotNull { alarm -> nextOccurrence(alarm, now)?.let { alarm to it } }
         .minByOrNull { it.second }
 
+    /** The alarms that ring at exactly [at]. */
+    fun dueAt(alarms: List<Alarm>, at: ZonedDateTime): List<Alarm> =
+        alarms.filter { nextOccurrence(it, at.minusSeconds(1))?.toInstant() == at.toInstant() }
+
+    /** [alarm] after it rang (or should have rung) at [at]: one-time alarms turn off, repeating ones drop stale data. */
+    fun afterRinging(alarm: Alarm, at: ZonedDateTime): Alarm =
+        if (alarm.repeats) normalize(alarm, at) else alarm.copy(enabled = false)
+
+    /**
+     * The times from [from] to [until] (both inclusive) at which [alarms] ring, each with the alarms ringing then.
+     * One-time alarms only ring once. Stops after [limit] occurrences.
+     */
+    fun occurrencesBetween(
+        alarms: List<Alarm>,
+        from: ZonedDateTime,
+        until: ZonedDateTime,
+        limit: Int = 100
+    ): List<Occurrence> {
+        val result = mutableListOf<Occurrence>()
+        var current = alarms
+        var cursor = from.minusSeconds(1)
+        while (result.size < limit) {
+            val at = upcoming(current, cursor)?.second ?: break
+            if (at.isAfter(until)) break
+            val due = dueAt(current, at)
+            result += Occurrence(at, due)
+            val dueIds = due.map { it.id }.toSet()
+            current = current.map { if (it.id in dueIds) afterRinging(it, at) else it }
+            cursor = at
+        }
+        return result
+    }
+
     /** Time from [now] until [at], rounded up to whole minutes (an alarm 30 seconds away is "in 1 minute"). */
     fun timeUntil(at: ZonedDateTime, now: ZonedDateTime): Duration {
         val duration = Duration.between(now, at)

@@ -3,7 +3,6 @@ package io.github.emilmelgaard.pathwake.ui.puzzle
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -55,20 +54,6 @@ class PuzzlePanelTest {
         rule.onNodeWithTag("panel").performTouchInput { drag(onPuzzle, path) }
         rule.waitForIdle()
         return solved
-    }
-
-    private fun TouchInjectionScope.drag(onPuzzle: Puzzle, path: List<Pos>) {
-        val geometry = PuzzleGeometry(onPuzzle, width.toFloat(), height.toFloat())
-        down(geometry.toPx(path.first()))
-        for (i in 1 until path.size) {
-            val from = geometry.toPx(path[i - 1])
-            val to = geometry.toPx(path[i])
-            for (step in 1..5) moveTo(from + (to - from) * (step / 5f))
-        }
-        val exit = onPuzzle.exitAt(path.last())!!
-        val end = geometry.exitEnd(exit.node, exit.direction)
-        moveTo(end + (end - geometry.toPx(exit.node)) * 0.5f)
-        up()
     }
 
     @Test

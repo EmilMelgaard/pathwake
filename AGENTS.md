@@ -11,11 +11,20 @@ one chunk per branch + pull request; keep the plan updated when decisions change
 - Modules:
   - `:app`: Kotlin + Jetpack Compose + Material 3 + Navigation 3. AGP 9 built-in Kotlin
     (do **not** add the `org.jetbrains.kotlin.android` plugin). Packages:
-    - `alarm`: the `Alarm` model and `AlarmSchedule` (pure next-occurrence logic, unit-tested).
-    - `data`: Room 2.8 (KSP, exported schemas in `app/schemas`) behind `AlarmRepository`; device-protected storage.
+    - `alarm`: the `Alarm` model, `AlarmSchedule` (pure next-occurrence logic) and `AlarmScheduler` (keeps the
+      platform alarm set, rings due alarms, catches up after reboots/clock changes). Pure Kotlin behind small
+      interfaces (`ExactAlarms`, `SchedulerState`, `Ringer`), unit-tested with fakes.
+    - `ring`: `RingingSession` / `RingingController`: the alarm that is ringing and its puzzle progress (pure).
+    - `system`: the Android side: `setAlarmClock` (`AndroidExactAlarms`), receivers, `RingingService` (sound,
+      vibration, auto-silence), notifications, permissions, SharedPreferences stores.
+    - `data`: Room 2.8 (KSP, exported schemas in `app/schemas`, migrations tested in `MigrationTest`) behind
+      `AlarmRepository`. The UI gets a `SchedulingAlarmRepository` that reschedules after every change.
     - `ui`: one package per screen with a ViewModel; `ui/common` has formatting, the app-wide `Messenger`
       (snackbars) and the `UnsavedChangesGuard`. `Navigation.kt` uses the Material 3 list-detail scene strategy.
+    - `ui/ringing`: `RingingActivity` (shows over the lock screen) with the puzzles that stop the alarm.
     - `PathwakeApplication` holds the `AppContainer` (manual DI). ViewModels take the repository and a `now` clock.
+  - Everything the alarm engine touches is direct-boot aware and lives in device-protected storage, so alarms ring
+    after a reboot before the first unlock. Don't read credential-protected storage (or shared media) from it.
   - The app's minSdk is 29 without core library desugaring: avoid `java.time`/JDK APIs newer than Java 8 + API 29
     (lint's NewApi check catches them, e.g. `Duration.toHoursPart()`).
   - `:puzzle`: pure Kotlin/JVM puzzle engine (model, `Validator`, `Solver`, `Generator`, `PathTracer`).
@@ -47,6 +56,16 @@ android layout                              # JSON UI tree of the current screen
 android screen capture -o screen.png        # screenshot; always look at it
 android docs search "<query>"               # official Android knowledge base
 ```
+
+## Testing alarms on an emulator
+
+- Set an alarm 2 minutes ahead (time picker keyboard mode: delete, then type `hhmm`), lock with `adb shell input
+  keyevent 26` and wait. `adb shell dumpsys alarm | grep pathwake` shows the scheduled `setAlarmClock` alarm.
+- Puzzles are seeded: read `seed` and `puzzle_number` with `adb shell run-as io.github.emilmelgaard.pathwake cat
+  /data/user_de/0/io.github.emilmelgaard.pathwake/shared_prefs/ringing.xml`; `Generator.generate(difficulty,
+  seed + puzzleNumber).solution` is the line to draw (doubled coordinates: node = pos / 2).
+- Direct boot: `adb shell locksettings set-pin 1234`, then `adb reboot`; clear with `locksettings clear --old 1234`.
+- `adb shell dumpsys audio` shows the alarm's player and any `AudioHardening` (Android 17) messages.
 
 ## Rules
 

@@ -127,6 +127,9 @@ class AlarmEditorViewModel(
 
     fun setPuzzleCount(count: Int) = edit { it.copy(puzzleCount = count.coerceIn(1, Alarm.MAX_PUZZLES)) }
 
+    /** [minutes] null: ring until the puzzles are solved. */
+    fun setAutoSilence(minutes: Int?) = edit { it.copy(autoSilenceMinutes = minutes?.coerceAtLeast(1)) }
+
     /** Saves (and enables) the alarm. */
     fun save(onSaved: (SavedAlarm) -> Unit) {
         val current = draft.value ?: return

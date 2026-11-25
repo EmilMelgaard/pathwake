@@ -23,7 +23,6 @@ data class PuzzleColors(
     val lineGlow: Color,
     val solvedLine: Color,
     val dot: Color,
-    val dotOnLine: Color,
     val error: Color,
     val symbols: Map<SymbolColor, Color>,
     /** Outline around squares and stars, for looks where some symbol colors are close to the panel color. */
@@ -54,7 +53,6 @@ data class PuzzleColors(
             lineGlow = Color(0xFFFFD66B),
             solvedLine = Color(0xFFFFFFFF),
             dot = Color(0xFF101820),
-            dotOnLine = Color(0xFF101820),
             error = Color(0xFFFF4F4F),
             symbols = symbolPalette,
             symbolOutline = null,
@@ -71,7 +69,6 @@ data class PuzzleColors(
                 lineGlow = scheme.primary,
                 solvedLine = scheme.tertiary,
                 dot = scheme.onSurface,
-                dotOnLine = scheme.onPrimary,
                 error = scheme.error,
                 symbols = symbolPalette,
                 symbolOutline = scheme.outline,

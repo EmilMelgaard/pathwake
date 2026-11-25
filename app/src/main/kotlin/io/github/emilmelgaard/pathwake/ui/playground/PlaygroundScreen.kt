@@ -163,6 +163,7 @@ private fun PlaygroundControls(
         state.puzzle?.let { generated ->
             val puzzle = generated.puzzle
             val mechanics = generated.mechanics.map { mechanicName(it) }.joinToString()
+                .ifEmpty { stringResource(R.string.no_symbols) }
             val solutions = generated.solutionCount?.let {
                 pluralStringResource(R.plurals.solution_count, it, it)
             } ?: stringResource(R.string.solution_count_unknown)

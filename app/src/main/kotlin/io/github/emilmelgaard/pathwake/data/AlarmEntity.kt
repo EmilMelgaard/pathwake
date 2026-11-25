@@ -53,7 +53,7 @@ fun AlarmEntity.toAlarm() = Alarm(
     date = dateEpochDay?.let(LocalDate::ofEpochDay),
     pauses = pauses.split(';').filter { it.isNotBlank() }.mapNotNull(::parseRange),
     skippedDate = skippedEpochDay?.let(LocalDate::ofEpochDay),
-    difficulty = Difficulty.entries.firstOrNull { it.name == difficulty } ?: Difficulty.MEDIUM,
+    difficulty = difficultyOf(difficulty) ?: Difficulty.MEDIUM,
     puzzleCount = puzzleCount.coerceIn(1, Alarm.MAX_PUZZLES),
     autoSilenceMinutes = autoSilenceMinutes?.takeIf { it > 0 }
 )
@@ -62,3 +62,9 @@ private fun parseRange(text: String): DateRange? = runCatching {
     val (start, end) = text.split("..")
     DateRange(LocalDate.parse(start), LocalDate.parse(end))
 }.getOrNull()
+
+/** Difficulties are stored by name. Names of renamed difficulties keep working. */
+fun difficultyOf(name: String?): Difficulty? =
+    Difficulty.entries.firstOrNull { it.name == name } ?: LEGACY_DIFFICULTIES[name]
+
+private val LEGACY_DIFFICULTIES = mapOf("FIENDISH" to Difficulty.BRUTAL)

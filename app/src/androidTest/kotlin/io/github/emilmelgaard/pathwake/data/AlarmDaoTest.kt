@@ -43,7 +43,7 @@ class AlarmDaoTest {
                 DateRange(LocalDate.of(2027, 2, 9), LocalDate.of(2027, 2, 9))
             ),
             skippedDate = LocalDate.of(2026, 11, 30),
-            difficulty = Difficulty.FIENDISH,
+            difficulty = Difficulty.BRUTAL,
             puzzleCount = 3,
             autoSilenceMinutes = null
         )

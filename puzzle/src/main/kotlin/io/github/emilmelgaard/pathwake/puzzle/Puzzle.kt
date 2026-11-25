@@ -74,6 +74,8 @@ enum class Symmetry {
 data class Exit(val node: Pos, val direction: Direction)
 
 /**
+ * A puzzle on a grid of [width] x [height] cells. One of them may be 0: then the grid is a single straight track.
+ *
  * @property dotLines for symmetry puzzles: dots that must be covered by a specific line (0 = the drawn line, 1 = its
  *   mirror image). Other dots may be covered by either line.
  */
@@ -92,7 +94,9 @@ data class Puzzle(
     val rows: Int get() = 2 * height + 1
 
     init {
-        require(width in 1..MAX_SIZE && height in 1..MAX_SIZE) { "Size must be 1..$MAX_SIZE, was ${width}x$height" }
+        require(width in 0..MAX_SIZE && height in 0..MAX_SIZE && width + height > 0) {
+            "Size must be 0..$MAX_SIZE (not both 0), was ${width}x$height"
+        }
         require(starts.isNotEmpty() && starts.all { it.isNode && contains(it) }) { "Invalid starts: $starts" }
         require(exits.isNotEmpty()) { "At least one exit is required" }
         require(exits.map { it.node }.toSet().size == exits.size) { "At most one exit per node" }

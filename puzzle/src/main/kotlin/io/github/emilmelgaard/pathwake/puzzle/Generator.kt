@@ -17,7 +17,8 @@ enum class Mechanic {
     MULTIPLE_STARTS_AND_EXITS
 }
 
-enum class Difficulty { EASY, MEDIUM, HARD, EXPERT, FIENDISH }
+/** Preset difficulties, easiest first. [TRIVIAL] is a straight line, like the door panels of *The Witness*. */
+enum class Difficulty { TRIVIAL, EASY, MEDIUM, HARD, EXPERT, BRUTAL }
 
 /**
  * Parameters for one generated puzzle. Symbol mechanics in [mechanics] are placed by the generator;
@@ -104,6 +105,7 @@ object Generator {
 
     /** Generates a puzzle for [difficulty]. The same seed always gives the same puzzle. */
     fun generate(difficulty: Difficulty, seed: Long = Random.nextLong()): GeneratedPuzzle {
+        if (difficulty == Difficulty.TRIVIAL) return straightLine(seed)
         val random = Random(seed)
         val budget = Budget(STEP_BUDGET)
         var best: Candidate? = null
@@ -120,6 +122,14 @@ object Generator {
             Attempt(easy, random, Budget(STEP_BUDGET)).run()?.let { return it.toGenerated(difficulty, seed) }
         }
         return fallbackPuzzle(difficulty, seed)
+    }
+
+    /** A straight track from a start on the left to an exit on the right, without symbols. */
+    private fun straightLine(seed: Long): GeneratedPuzzle {
+        val length = 3
+        val solution = (0..length).map { Pos(2 * it, 0) }
+        val puzzle = Puzzle(length, 0, setOf(solution.first()), listOf(Exit(solution.last(), Direction.RIGHT)))
+        return GeneratedPuzzle(puzzle, solution, Difficulty.TRIVIAL, seed, solutionCount = 1)
     }
 
     /** A fixed, always valid puzzle: one dot in the middle of a 3x3 grid. */
@@ -151,6 +161,8 @@ object Generator {
             Symmetry.NONE
         }
         return when (difficulty) {
+            Difficulty.TRIVIAL -> error("Trivial puzzles aren't generated from a spec")
+
             Difficulty.EASY -> PuzzleSpec(
                 width = 3,
                 height = 3,
@@ -207,7 +219,7 @@ object Generator {
                 maxTetrisRegion = 12
             )
 
-            Difficulty.FIENDISH -> PuzzleSpec(
+            Difficulty.BRUTAL -> PuzzleSpec(
                 width = 6,
                 height = 6,
                 mechanics = pick(2 + random.nextInt(2), 1 + random.nextInt(2), gapChance = 0.5f, multiChance = 0.5f),

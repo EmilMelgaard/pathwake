@@ -199,6 +199,9 @@ private fun DrawScope.drawPuzzle(
         }
     }
 
+    // Dots lie under the line, which hides them.
+    for (dot in puzzle.dots) drawDot(g, puzzle, colors, dot, dotColor(puzzle, colors, dot))
+
     val symmetric = puzzle.symmetry != Symmetry.NONE
     solutionHint?.let { hint ->
         for (line in if (symmetric) listOf(hint, hint.map(puzzle::mirror)) else listOf(hint)) {
@@ -249,21 +252,18 @@ private fun DrawScope.drawPuzzle(
         drawCircle(color, PuzzleGeometry.START_RADIUS * u, start)
     }
 
-    // Dots go on top so they stay visible on the line. Dots for a specific line take that line's color.
-    val covered = lines.flatMap { coveredPositions(it.first) }.toSet()
+    // Broken dots blink on top of the line, so a dot covered by the wrong line (symmetry) is visible too.
     for (dot in puzzle.dots) {
-        val line = puzzle.dotLines[dot]
-        val base = when {
-            line != null -> colors.symmetryLine(line)
-            dot in covered -> colors.dotOnLine
-            else -> colors.dot
-        }
-        val color = if (dot in violations) lerp(base, colors.error, blink) else base
-        val hexagon = hexagonPath(g.toPx(dot), 0.11f * u)
-        drawPath(hexagon, color)
-        if (line != null) drawPath(hexagon, colors.dot, style = Stroke(0.025f * u))
+        if (dot in violations) drawDot(g, puzzle, colors, dot, lerp(dotColor(puzzle, colors, dot), colors.error, blink))
     }
 }
+
+/** Dots that belong to one line of a symmetry puzzle take that line's color. */
+private fun dotColor(puzzle: Puzzle, colors: PuzzleColors, dot: Pos): Color =
+    puzzle.dotLines[dot]?.let(colors::symmetryLine) ?: colors.dot
+
+private fun DrawScope.drawDot(g: PuzzleGeometry, puzzle: Puzzle, colors: PuzzleColors, dot: Pos, color: Color) =
+    drawPath(hexagonPath(g.toPx(dot), 0.11f * g.unit), color)
 
 /** Mirror image of a point in node units. */
 private fun mirrorUnits(puzzle: Puzzle, p: Offset): Offset = when (puzzle.symmetry) {
@@ -333,11 +333,6 @@ private fun linePath(g: PuzzleGeometry, nodes: List<Pos>, tip: Offset?) = Path()
     tip?.let { lineTo(it.x, it.y) }
 }
 
-private fun coveredPositions(nodes: List<Pos>): Set<Pos> = buildSet {
-    addAll(nodes)
-    for (i in 1 until nodes.size) add(Pos((nodes[i - 1].x + nodes[i].x) / 2, (nodes[i - 1].y + nodes[i].y) / 2))
-}
-
 private fun DrawScope.drawSquare(center: Offset, u: Float, color: Color, outline: Color?) {
     val side = 0.34f * u
     val topLeft = center - Offset(side / 2, side / 2)
@@ -379,7 +374,10 @@ private fun DrawScope.drawTriangles(center: Offset, u: Float, count: Int, color:
     }
 }
 
-/** Tetris piece as small blocks; rotatable pieces are tilted, subtractive (negative) ones are hollow. */
+/**
+ * Tetris piece as small blocks; subtractive (negative) ones are hollow. Rotatable pieces are tilted, unless rotating
+ * doesn't change them (single blocks, squares).
+ */
 private fun DrawScope.drawTetris(center: Offset, u: Float, tetris: Tetris, color: Color) {
     val shape = tetris.shape
     val cellSize = min(0.17f * u, 0.6f * u / max(shape.width, shape.height))
@@ -403,7 +401,7 @@ private fun DrawScope.drawTetris(center: Offset, u: Float, tetris: Tetris, color
             }
         }
     }
-    if (tetris.rotatable) rotate(15f, center, draw) else draw()
+    if (tetris.rotatable && tetris.shape.rotations.size > 1) rotate(15f, center, draw) else draw()
 }
 
 /** Elimination mark: a "Y" with three arms 120 degrees apart. */

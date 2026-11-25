@@ -42,6 +42,7 @@ class SettingsRepositoryTest {
             theme = ThemeMode.DARK,
             dynamicColor = true,
             puzzleLook = PuzzleLook.MATERIAL,
+            colorMarks = true,
             firstDayOfWeek = DayOfWeek.SUNDAY,
             crescendoSeconds = 60,
             solvingVolume = SolvingVolume.MUTE,

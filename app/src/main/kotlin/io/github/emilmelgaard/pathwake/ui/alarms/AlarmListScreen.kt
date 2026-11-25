@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,7 +39,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -83,6 +83,7 @@ data class AlarmListActions(
     val onSkipNext: (Alarm) -> Unit = {},
     val onCancelSkip: (Alarm) -> Unit = {},
     val onDuplicate: (Alarm) -> Unit = {},
+    val onTest: (Alarm) -> Unit = {},
     val onDelete: (Alarm) -> Unit = {},
     val onOpenRinging: () -> Unit = {},
     val onFixPermission: (AlarmPermission) -> Unit = {}
@@ -162,6 +163,10 @@ fun AlarmListScreen(
             onSkipNext = viewModel::skipNext,
             onCancelSkip = viewModel::cancelSkip,
             onDuplicate = viewModel::duplicate,
+            onTest = { alarm ->
+                container.testAlarm(alarm)
+                context.startActivity(RingingActivity.intent(context))
+            },
             onDelete = { alarm ->
                 viewModel.delete(alarm)
                 onAlarmDeleted(alarm.id)
@@ -268,7 +273,9 @@ private fun Notices(notices: AlarmListNotices, actions: AlarmListActions) {
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = actions.onOpenSettings) { Text(stringResource(R.string.settings)) }
+                Button(onClick = actions.onOpenSettings, colors = errorButtonColors()) {
+                    Text(stringResource(R.string.settings))
+                }
             }
         }
     }
@@ -293,7 +300,7 @@ private fun Notices(notices: AlarmListNotices, actions: AlarmListActions) {
                             modifier = Modifier.weight(1f)
                         )
                         val allow = permission == AlarmPermission.NOTIFICATIONS && notices.canRequestNotifications
-                        TextButton(onClick = { actions.onFixPermission(permission) }) {
+                        Button(onClick = { actions.onFixPermission(permission) }, colors = errorButtonColors()) {
                             Text(stringResource(if (allow) R.string.allow else R.string.open_settings))
                         }
                     }
@@ -302,6 +309,13 @@ private fun Notices(notices: AlarmListNotices, actions: AlarmListActions) {
         }
     }
 }
+
+/** For buttons on error-colored cards; the theme's primary color doesn't stand out well there. */
+@Composable
+private fun errorButtonColors() = ButtonDefaults.buttonColors(
+    containerColor = MaterialTheme.colorScheme.error,
+    contentColor = MaterialTheme.colorScheme.onError
+)
 
 @Composable
 private fun NextAlarmHeader(state: AlarmListUiState) {
@@ -404,6 +418,13 @@ private fun AlarmMenu(item: AlarmListItem, actions: AlarmListActions) {
                     )
                 }
             }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.test_alarm_action)) },
+                onClick = {
+                    expanded = false
+                    actions.onTest(alarm)
+                }
+            )
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.duplicate)) },
                 onClick = {

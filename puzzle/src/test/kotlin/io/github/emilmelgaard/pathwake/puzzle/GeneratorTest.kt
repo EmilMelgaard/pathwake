@@ -108,5 +108,11 @@ class GeneratorTest {
         assertTrue(puzzle.mechanics().isEmpty())
         assertEquals(listOf(generated.solution), Solver.solve(puzzle, maxSolutions = 10).solutions)
         assertTrue(generated.solution.all { it.y == 0 })
+        assertEquals(generated.solution, puzzle.trackLine())
+    }
+
+    @Test
+    fun gridPuzzles_haveNoTrackLine() {
+        assertEquals(null, Generator.generate(Difficulty.EASY, 7).puzzle.trackLine())
     }
 }

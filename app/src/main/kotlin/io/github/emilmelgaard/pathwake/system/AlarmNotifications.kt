@@ -73,10 +73,14 @@ class AlarmNotifications(private val context: Context) {
 
             else -> context.getString(R.string.ringing_progress, session.solved + 1, session.puzzleCount)
         }
+        // A test is started from the app, which opens the puzzles itself: no need to pop up over them.
+        val test = session?.test == true
         return NotificationCompat.Builder(context, CHANNEL_RINGING)
+            .setSilent(test)
             .setSmallIcon(R.drawable.ic_puzzle)
             .setContentTitle(session?.let { title(it.alarmTime, it.labels) } ?: context.getString(R.string.alarm))
             .setContentText(text)
+            .setSubText(if (test) context.getString(R.string.test_alarm) else null)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)

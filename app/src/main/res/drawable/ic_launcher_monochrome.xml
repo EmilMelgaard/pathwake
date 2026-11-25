@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Themed icon: the launcher icon's foreground in one color; the line is the strongest. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Moved up so the puzzle grid is centered, and scaled to keep the bells in the safe zone. -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.94"
+        android:scaleY="0.94"
+        android:translateY="-3.76">
+        <!--
+            The clock: rim, bells and feet as one shape, so the see-through color has no lighter overlaps or seams.
+            Everything is clockwise except the inner edge of the rim, which leaves the face open.
+        -->
+        <path
+            android:fillColor="#B3000000"
+            android:pathData="M28.25,58A25.75,25.75 0,1 1,79.75 58A25.75,25.75 0,1 1,28.25 58Z
+                M31.75,58A22.25,22.25 0,1 0,76.25 58A22.25,22.25 0,1 0,31.75 58Z
+                M29.94,46.66A9,9 0,0 1,42.66 33.94Z
+                M65.34,33.94A9,9 0,0 1,78.06 46.66Z
+                M43.714,80.882L41.214,85.032A2,2 0,0 1,37.786 82.968L40.286,78.818A2,2 0,0 1,43.714 80.882Z
+                M67.714,78.818L70.214,82.968A2,2 0,0 1,66.786 85.032L64.286,80.882A2,2 0,0 1,67.714 78.818Z" />
+        <!-- Puzzle grid (4x4 cells) with its exit at the top -->
+        <path
+            android:pathData="M41,45H67M41,51.5H67M41,58H67M41,64.5H67M41,71H67M41,45V71M47.5,45V71M54,39V71M60.5,45V71M67,45V71"
+            android:strokeWidth="2.4"
+            android:strokeColor="#59000000"
+            android:strokeLineCap="round" />
+        <!-- The line from the start circle to the exit, which also forms the clock's hands -->
+        <path
+            android:pathData="M41,58H54V39"
+            android:strokeWidth="3.4"
+            android:strokeColor="#FF000000"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round" />
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="M41,58m-4.5,0a4.5,4.5 0,1 0,9 0a4.5,4.5 0,1 0,-9 0" />
+    </group>
+</vector>

@@ -67,7 +67,8 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
             puzzleNumber = preferences.getInt(PUZZLE_NUMBER, 0),
             sound = AlarmSound.parse(preferences.getString(SOUND, null), preferences.getString(SOUND_TITLE, null)),
             vibrate = preferences.getBoolean(VIBRATE, true),
-            stopWhenSoundEnds = preferences.getBoolean(STOP_WHEN_SOUND_ENDS, false)
+            stopWhenSoundEnds = preferences.getBoolean(STOP_WHEN_SOUND_ENDS, false),
+            test = preferences.getBoolean(TEST, false)
         )
     }.getOrNull()
 
@@ -88,6 +89,7 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
         session.sound.title?.let { putString(SOUND_TITLE, it) }
         putBoolean(VIBRATE, session.vibrate)
         putBoolean(STOP_WHEN_SOUND_ENDS, session.stopWhenSoundEnds)
+        putBoolean(TEST, session.test)
     }
 
     private companion object {
@@ -105,6 +107,7 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
         const val SOUND_TITLE = "sound_title"
         const val VIBRATE = "vibrate"
         const val STOP_WHEN_SOUND_ENDS = "stop_when_sound_ends"
+        const val TEST = "test"
 
         /** Unit separator: can't be typed into a label. */
         const val SEPARATOR = "\u001F"

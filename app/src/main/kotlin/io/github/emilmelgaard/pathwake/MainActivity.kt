@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.emilmelgaard.pathwake.settings.ThemeMode
 import io.github.emilmelgaard.pathwake.ui.common.LocalFirstDayOfWeek
+import io.github.emilmelgaard.pathwake.ui.common.drawAfterLoading
 import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,6 +26,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         val settingsRepository = appContainer.settings
+        drawAfterLoading(settingsRepository)
         setContent {
             val settings by settingsRepository.current.collectAsStateWithLifecycle()
             val dark = when (settings.theme) {

@@ -78,6 +78,7 @@ class RingingService : Service() {
         val settings = container.settings.get()
         val streamFloor = StreamFloor()
         var shown: RingingSession? = null
+        var wasInCall = false
         since = Instant.now()
         while (true) {
             val session = container.ringing.session.value ?: break
@@ -90,11 +91,20 @@ class RingingService : Service() {
             val now = Instant.now()
             val silenceAt = listOfNotNull(session.silenceAt, soundEndedAt).minOrNull()
             if (silenceAt != null && !now.isBefore(silenceAt)) {
-                container.notifications.showSilenced(session, Duration.between(session.startedAt, now))
+                if (!session.test) {
+                    container.notifications.showSilenced(
+                        session,
+                        Duration.between(session.startedAt, now)
+                    )
+                }
                 container.ringing.stop()
                 break
             }
-            player.setVolume(volume(settings, now))
+            val inCall = audioManager.mode in CALL_MODES
+            // The call had audio focus, so music and other media may come back over the alarm.
+            if (wasInCall && !inCall) player.regainFocus()
+            wasInCall = inCall
+            player.setVolume(volume(settings, now, inCall))
             if (settings.lockVolumeButtons) streamFloor.keep()
             delay(TICK_MILLIS)
         }
@@ -133,11 +143,12 @@ class RingingService : Service() {
         soundEndedAt = since.plus(Duration.ofMinutes(minutes))
     }
 
-    private fun volume(settings: Settings, now: Instant): Float = RingVolume.of(
+    private fun volume(settings: Settings, now: Instant, inCall: Boolean): Float = RingVolume.of(
         sinceStart = Duration.between(since, now),
         crescendo = Duration.ofSeconds(settings.crescendoSeconds.toLong()),
         solving = settings.solvingVolume,
-        sinceInteraction = appContainer.ringing.lastInteraction.value?.let { Duration.between(it, now) }
+        sinceInteraction = appContainer.ringing.lastInteraction.value?.let { Duration.between(it, now) },
+        inCall = inCall
     )
 
     /** Keeps the alarm stream from being turned down while ringing (it may be turned up). */
@@ -174,6 +185,13 @@ class RingingService : Service() {
 
     companion object {
         private const val TICK_MILLIS = 200L
+
+        /** Audio modes of an incoming, ongoing (phone) or VoIP call; none need a permission to read. */
+        private val CALL_MODES = setOf(
+            AudioManager.MODE_RINGTONE,
+            AudioManager.MODE_IN_CALL,
+            AudioManager.MODE_IN_COMMUNICATION
+        )
 
         /** Whether the service runs in this process (false after a crash or reboot cut off a ringing alarm). */
         @Volatile

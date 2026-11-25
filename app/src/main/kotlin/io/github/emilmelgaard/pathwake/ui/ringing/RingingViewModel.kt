@@ -89,6 +89,8 @@ class RingingViewModel(
     /** The puzzle was touched (the alarm is quieter while solving). */
     fun interacted() = controller.interacted()
 
+    fun cancelTest() = controller.cancelTest()
+
     fun newPuzzle() {
         val session = controller.session.value ?: return
         if (solvedNumber.value != session.puzzleNumber) controller.newPuzzle(session.puzzleNumber)

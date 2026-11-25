@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -18,7 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -84,6 +86,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -118,6 +121,7 @@ import io.github.emilmelgaard.pathwake.ui.common.formatTime
 import io.github.emilmelgaard.pathwake.ui.common.formatWhen
 import io.github.emilmelgaard.pathwake.ui.common.orderedWeek
 import io.github.emilmelgaard.pathwake.ui.common.soundTitle
+import io.github.emilmelgaard.pathwake.ui.ringing.RingingActivity
 import io.github.emilmelgaard.pathwake.ui.sound.SoundPickerDialog
 import java.time.DayOfWeek
 import java.time.Instant
@@ -132,6 +136,7 @@ data class AlarmEditorActions(
     val onSave: () -> Unit = {},
     val onDelete: () -> Unit = {},
     val onTryPuzzle: (Difficulty) -> Unit = {},
+    val onTest: () -> Unit = {},
     val onTimeChange: (LocalTime) -> Unit = {},
     val onLabelChange: (String) -> Unit = {},
     val onToggleDay: (DayOfWeek) -> Unit = {},
@@ -208,6 +213,11 @@ fun AlarmEditorScreen(
                 }
             },
             onTryPuzzle = onTryPuzzle,
+            onTest = {
+                // Tests what is in the editor, saved or not.
+                container.testAlarm(state.alarm)
+                context.startActivity(RingingActivity.intent(context))
+            },
             onTimeChange = viewModel::setTime,
             onLabelChange = viewModel::setLabel,
             onToggleDay = viewModel::toggleDay,
@@ -386,7 +396,11 @@ private fun TimeDialog(initial: LocalTime, onConfirm: (LocalTime) -> Unit, onDis
 private fun RepeatSection(state: AlarmEditorUiState, actions: AlarmEditorActions) {
     val alarm = state.alarm
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.repeat), style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.repeat),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() }
+        )
         DayToggles(alarm.repeatDays, actions.onToggleDay)
         if (alarm.repeats) {
             PausesRow(alarm.pauses, state.today, actions)
@@ -397,23 +411,25 @@ private fun RepeatSection(state: AlarmEditorUiState, actions: AlarmEditorActions
     }
 }
 
+/** Round day buttons; with large text they become pills and wrap onto more lines. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DayToggles(selected: Set<DayOfWeek>, onToggle: (DayOfWeek) -> Unit) {
     val locale = currentLocale()
     val colors = MaterialTheme.colorScheme
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
         orderedWeek(firstDayOfWeek()).forEach { day ->
             val checked = day in selected
             val name = day.getDisplayName(TextStyle.FULL, locale)
             Surface(
                 checked = checked,
                 onCheckedChange = { onToggle(day) },
-                shape = CircleShape,
+                shape = RoundedCornerShape(percent = 50),
                 color = if (checked) colors.primary else colors.surfaceContainerHighest,
                 contentColor = if (checked) colors.onPrimary else colors.onSurfaceVariant,
-                modifier = Modifier.size(40.dp).semantics { contentDescription = name }
+                modifier = Modifier.defaultMinSize(40.dp, 40.dp).semantics { contentDescription = name }
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Box(Modifier.padding(horizontal = 6.dp), contentAlignment = Alignment.Center) {
                     Text(formatDayName(day), style = MaterialTheme.typography.labelMedium, maxLines = 1)
                 }
             }
@@ -548,7 +564,11 @@ private fun SkipNextRow(skippedDate: LocalDate?, onSkipNextChange: (Boolean) -> 
 @Composable
 private fun PuzzleSection(alarm: Alarm, actions: AlarmEditorActions) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.puzzles_title), style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.puzzles_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() }
+        )
         Text(stringResource(R.string.difficulty), style = MaterialTheme.typography.titleSmall)
         DifficultyChips(alarm.difficulty, actions.onDifficultyChange)
         PuzzleCountRow(alarm.puzzleCount, Alarm.MAX_PUZZLES, actions.onPuzzleCountChange)
@@ -563,7 +583,11 @@ private fun PuzzleSection(alarm: Alarm, actions: AlarmEditorActions) {
 private fun RingingSection(alarm: Alarm, actions: AlarmEditorActions) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.ringing_title), style = MaterialTheme.typography.titleMedium)
+        Text(
+            stringResource(R.string.ringing_title),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { heading() }
+        )
         ValueRow(stringResource(R.string.sound), soundTitle(alarm.sound), onClick = { picking = true })
         SwitchRow(stringResource(R.string.vibrate), alarm.vibrate, actions.onVibrateChange)
         ChoiceField(
@@ -575,6 +599,10 @@ private fun RingingSection(alarm: Alarm, actions: AlarmEditorActions) {
             supportingText = stringResource(R.string.auto_silence_hint),
             modifier = Modifier.fillMaxWidth().testTag(AUTO_SILENCE_TAG)
         )
+        OutlinedButton(onClick = actions.onTest) {
+            Icon(Icons.Filled.PlayArrow, contentDescription = null, Modifier.size(18.dp))
+            Text(stringResource(R.string.test_alarm_action), modifier = Modifier.padding(start = 8.dp))
+        }
     }
     if (picking) {
         SoundPickerDialog(

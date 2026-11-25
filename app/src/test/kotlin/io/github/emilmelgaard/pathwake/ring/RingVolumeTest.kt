@@ -30,4 +30,11 @@ class RingVolumeTest {
         assertEquals(1f, RingVolume.of(seconds(100), none, SolvingVolume.FULL, seconds(2)))
         assertEquals(1f, RingVolume.of(seconds(100), none, SolvingVolume.MUTE, seconds(10)))
     }
+
+    @Test
+    fun duringACall_isQuietButNeverLouderThanOtherwise() {
+        assertEquals(0.125f, RingVolume.of(seconds(100), none, SolvingVolume.LOWER, null, inCall = true))
+        assertEquals(0f, RingVolume.of(seconds(100), none, SolvingVolume.MUTE, seconds(2), inCall = true))
+        assertEquals(0f, RingVolume.of(none, seconds(60), SolvingVolume.FULL, null, inCall = true))
+    }
 }

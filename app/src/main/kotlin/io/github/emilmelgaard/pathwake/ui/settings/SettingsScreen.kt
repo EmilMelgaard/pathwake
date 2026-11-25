@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -181,7 +182,13 @@ fun SettingsContent(
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+    Text(
+        text,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.padding(top = 8.dp).semantics {
+            heading()
+        }
+    )
 }
 
 @Composable
@@ -292,6 +299,12 @@ private fun AppearanceSettings(settings: Settings, actions: SettingsActions) {
         text = { lookText(it) },
         onChange = { look -> actions.onUpdate { it.copy(puzzleLook = look) } },
         modifier = Modifier.fillMaxWidth()
+    )
+    SwitchRow(
+        title = stringResource(R.string.color_marks),
+        description = stringResource(R.string.color_marks_hint),
+        checked = settings.colorMarks,
+        onCheckedChange = { on -> actions.onUpdate { it.copy(colorMarks = on) } }
     )
     val localeFirstDay = WeekFields.of(currentLocale()).firstDayOfWeek
     ChoiceField(

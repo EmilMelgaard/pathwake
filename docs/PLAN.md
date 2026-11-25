@@ -137,7 +137,7 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
        sound can't be read, so a bundled tone plays instead. Custom sounds and volume options come in chunk 5.
      - Permissions: notifications are requested when the first alarm is saved. The alarm list warns (with a button to
        fix it) when notifications, exact alarms (Android 12) or full-screen intents (Android 14+) are missing.
-5. **Sounds and settings** *(in review)*
+5. **Sounds and settings** *(done, #7)*
    - Tone picker, custom files, gradual volume, vibration, preview.
    - Settings screen: theme, puzzle look, volume while solving, anti-cheat, defaults.
    - Decisions:
@@ -156,8 +156,29 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
      - Alarms ringing together: the first audible sound wins, vibration if any wants it, "never" stops beats minutes
        (the longest wins), and "when the sound ends" only applies if every alarm uses it.
      - Settings are stored with DataStore in device-protected storage.
-6. **Polish and release**
+6. **Polish** *(in review)*
    - App icon, edge cases (overlapping alarms, phone call while ringing), accessibility and color-blind pass.
+   - Decisions:
+     - Icon: an alarm clock (bells, feet) whose face is a puzzle panel (4×4 grid, Panel colors). The lit line runs
+       from the start circle at 9 o'clock to the center and up to the exit at 12, so it is also the clock's hands.
+       Adaptive with a monochrome layer for themed icons.
+     - Test alarm (alarm menu and editor, which tests the unsaved settings): rings now like the real alarm (sound,
+       vibration, volume settings, puzzles) with a Cancel button. A test doesn't change the alarm, leaves no
+       notifications and isn't resumed after a restart; a real alarm that comes due replaces it, and a ringing real
+       alarm can't be tested over.
+     - Phone calls: while a call rings or is active (also VoIP), the alarm plays at 1/8 volume, like the stock clock's
+       in-call alarm, and keeps vibrating. When the call ends it is loud again and takes the audio focus back.
+     - Backup: Auto Backup keeps alarms and settings only. Custom sound files only move with a device-to-device
+       transfer (they can be too big for the cloud quota); the scheduler, ringing state and permission flags are
+       never copied. After a restore the alarms are set right away, without opening the app; alarms whose sound file
+       didn't come along use the default sound.
+     - Color-blind marks (setting, off by default): colored squares and stars get a dark mark per color (orange bar,
+       green vertical bar, magenta ring, cyan dot, yellow cross, blue plus; black and white none).
+     - Accessibility: Trivial puzzles have a screen-reader action ("Draw the line"), so the alarm can be stopped
+       without sight; section titles are headings; weekday buttons grow and wrap with large text.
+     - The app waits (up to 1 s, normally a few ms) for the settings before drawing its first frame, so it doesn't
+       flash the wrong theme. The theme now uses the full generated color scheme (it mixed in default purple text).
+7. **Release**
    - Play policy audit, store listing and screenshots (tablet + phone), privacy policy page.
    - `v0.1.0` to internal testing, then closed testing (12 testers / 14 days).
 

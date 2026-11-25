@@ -14,18 +14,37 @@ import io.github.emilmelgaard.pathwake.data.difficultyOf
 import java.time.DayOfWeek
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /** Reads and writes [Settings]. Unknown or missing values fall back to the defaults. */
 class SettingsRepository(private val dataStore: DataStore<Preferences>, scope: CoroutineScope) {
-    val settings: Flow<Settings> = dataStore.data.map(::read)
+    // A file that can't be read gives the defaults rather than breaking the app.
+    val settings: Flow<Settings> = dataStore.data.map(::read).catch { emit(Settings()) }
 
-    /** The latest settings, for code that can't wait (key handling, the first frame of the UI). */
-    val current: StateFlow<Settings> = settings.stateIn(scope, SharingStarted.Eagerly, Settings())
+    private val latest = MutableStateFlow(Settings())
+
+    /** The latest settings, for code that can't wait (key handling, drawing): the defaults until [isLoaded]. */
+    val current: StateFlow<Settings> = latest.asStateFlow()
+
+    /** Whether [current] holds the stored settings yet. */
+    @Volatile
+    var isLoaded = false
+        private set
+
+    init {
+        scope.launch {
+            settings.collect {
+                latest.value = it
+                isLoaded = true
+            }
+        }
+    }
 
     suspend fun get(): Settings = settings.first()
 
@@ -40,6 +59,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>, scope: C
             theme = enumOf(p[THEME]) ?: defaults.theme,
             dynamicColor = p[DYNAMIC_COLOR] ?: defaults.dynamicColor,
             puzzleLook = enumOf(p[PUZZLE_LOOK]) ?: defaults.puzzleLook,
+            colorMarks = p[COLOR_MARKS] ?: defaults.colorMarks,
             firstDayOfWeek = enumOf<DayOfWeek>(p[FIRST_DAY_OF_WEEK]),
             crescendoSeconds = p[CRESCENDO_SECONDS]?.coerceAtLeast(0) ?: defaults.crescendoSeconds,
             solvingVolume = enumOf(p[SOLVING_VOLUME]) ?: defaults.solvingVolume,
@@ -58,6 +78,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>, scope: C
         p[THEME] = s.theme.name
         p[DYNAMIC_COLOR] = s.dynamicColor
         p[PUZZLE_LOOK] = s.puzzleLook.name
+        p[COLOR_MARKS] = s.colorMarks
         s.firstDayOfWeek?.let { p[FIRST_DAY_OF_WEEK] = it.name } ?: p.remove(FIRST_DAY_OF_WEEK)
         p[CRESCENDO_SECONDS] = s.crescendoSeconds
         p[SOLVING_VOLUME] = s.solvingVolume.name
@@ -77,6 +98,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>, scope: C
         val THEME = stringPreferencesKey("theme")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val PUZZLE_LOOK = stringPreferencesKey("puzzle_look")
+        val COLOR_MARKS = booleanPreferencesKey("color_marks")
         val FIRST_DAY_OF_WEEK = stringPreferencesKey("first_day_of_week")
         val CRESCENDO_SECONDS = intPreferencesKey("crescendo_seconds")
         val SOLVING_VOLUME = stringPreferencesKey("solving_volume")

@@ -34,7 +34,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.emilmelgaard.pathwake.R
@@ -44,6 +46,7 @@ import io.github.emilmelgaard.pathwake.puzzle.Pos
 import io.github.emilmelgaard.pathwake.puzzle.Puzzle
 import io.github.emilmelgaard.pathwake.puzzle.Square
 import io.github.emilmelgaard.pathwake.puzzle.Star
+import io.github.emilmelgaard.pathwake.puzzle.SymbolColor
 import io.github.emilmelgaard.pathwake.puzzle.Symmetry
 import io.github.emilmelgaard.pathwake.puzzle.Tetris
 import io.github.emilmelgaard.pathwake.puzzle.TraceSnapshot
@@ -68,6 +71,7 @@ private sealed interface Feedback {
  * An interactive puzzle. Press the start circle and drag the line to an exit; releasing at the exit checks the line.
  * Broken rules blink and the line fades; a correct line stays lit and [onSolved] is called with it.
  *
+ * @param colorMarks marks colored squares and stars with a shape per color, for color-blind players.
  * @param solutionHint if set, drawn faintly behind the line (debug/"show solution").
  */
 @Composable
@@ -76,6 +80,7 @@ fun PuzzlePanel(
     onSolved: (List<Pos>) -> Unit,
     modifier: Modifier = Modifier,
     look: PuzzleLook = PuzzleLook.PANEL,
+    colorMarks: Boolean = false,
     solutionHint: List<Pos>? = null,
     enabled: Boolean = true
 ) {
@@ -98,11 +103,29 @@ fun PuzzlePanel(
         }
     }
 
-    val description = stringResource(R.string.puzzle_description, puzzle.width, puzzle.height)
+    // A straight track can be drawn without seeing it, e.g. with a screen reader.
+    val trackLine = remember(puzzle) { puzzle.trackLine()?.takeIf { Validator.validate(puzzle, it).isValid } }
+    val description = if (trackLine != null) {
+        stringResource(R.string.puzzle_description_track)
+    } else {
+        stringResource(R.string.puzzle_description, puzzle.width, puzzle.height)
+    }
+    val drawLine = stringResource(R.string.draw_line)
     Canvas(
         modifier
             .systemGestureExclusion()
-            .semantics { contentDescription = description }
+            .semantics {
+                contentDescription = description
+                if (enabled && trackLine != null) {
+                    customActions = listOf(
+                        CustomAccessibilityAction(drawLine) {
+                            feedback = Feedback.Solved(trackLine)
+                            currentOnSolved(trackLine)
+                            true
+                        }
+                    )
+                }
+            }
             .pointerInput(puzzle, enabled) {
                 if (!enabled) return@pointerInput
                 awaitEachGesture {
@@ -153,7 +176,7 @@ fun PuzzlePanel(
             }
     ) {
         val geometry = PuzzleGeometry(puzzle, size.width, size.height)
-        drawPuzzle(geometry, puzzle, colors, trace, feedback, blink.value, solutionHint)
+        drawPuzzle(geometry, puzzle, colors, colorMarks, trace, feedback, blink.value, solutionHint)
     }
 }
 
@@ -161,6 +184,7 @@ private fun DrawScope.drawPuzzle(
     g: PuzzleGeometry,
     puzzle: Puzzle,
     colors: PuzzleColors,
+    colorMarks: Boolean,
     trace: TraceSnapshot,
     feedback: Feedback?,
     blink: Float,
@@ -191,10 +215,20 @@ private fun DrawScope.drawPuzzle(
         val color = if (cell in violations) lerp(base, colors.error, blink) else base
         val center = g.toPx(cell)
         when (symbol) {
-            is Square -> drawSquare(center, u, color, colors.symbolOutline)
-            is Star -> drawStar(center, u, color, colors.symbolOutline)
+            is Square -> {
+                drawSquare(center, u, color, colors.symbolOutline)
+                if (colorMarks) drawColorMark(center, u, symbol.color)
+            }
+
+            is Star -> {
+                drawStar(center, u, color, colors.symbolOutline)
+                if (colorMarks) drawColorMark(center, u, symbol.color)
+            }
+
             is Triangles -> drawTriangles(center, u, symbol.count, color)
+
             is Tetris -> drawTetris(center, u, symbol, color)
+
             is Elimination -> drawElimination(center, u, color)
         }
     }
@@ -402,6 +436,39 @@ private fun DrawScope.drawTetris(center: Offset, u: Float, tetris: Tetris, color
         }
     }
     if (tetris.rotatable && tetris.shape.rotations.size > 1) rotate(15f, center, draw) else draw()
+}
+
+/**
+ * A dark mark inside a colored square or star that tells its color without color vision. Black and white stand apart
+ * by brightness and get none.
+ */
+private fun DrawScope.drawColorMark(center: Offset, u: Float, color: SymbolColor) {
+    val mark = Color(0xFF101820)
+    val half = 0.075f * u
+    val stroke = 0.045f * u
+    fun line(dx1: Float, dy1: Float, dx2: Float, dy2: Float) =
+        drawLine(mark, center + Offset(dx1, dy1), center + Offset(dx2, dy2), stroke, StrokeCap.Round)
+    when (color) {
+        SymbolColor.BLACK, SymbolColor.WHITE -> Unit
+
+        SymbolColor.ORANGE -> line(-half, 0f, half, 0f)
+
+        SymbolColor.GREEN -> line(0f, -half, 0f, half)
+
+        SymbolColor.MAGENTA -> drawCircle(mark, half * 0.8f, center, style = Stroke(stroke))
+
+        SymbolColor.CYAN -> drawCircle(mark, half * 0.6f, center)
+
+        SymbolColor.YELLOW -> {
+            line(-half, -half, half, half)
+            line(-half, half, half, -half)
+        }
+
+        SymbolColor.BLUE -> {
+            line(-half, 0f, half, 0f)
+            line(0f, -half, 0f, half)
+        }
+    }
 }
 
 /** Elimination mark: a "Y" with three arms 120 degrees apart. */

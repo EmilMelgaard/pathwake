@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -60,7 +61,9 @@ fun RingingScreen(onFinished: () -> Unit, modifier: Modifier = Modifier) {
         viewModel::newPuzzle,
         modifier,
         look = settings.puzzleLook,
-        onInteraction = viewModel::interacted
+        colorMarks = settings.colorMarks,
+        onInteraction = viewModel::interacted,
+        onCancelTest = viewModel::cancelTest
     )
 }
 
@@ -73,8 +76,10 @@ fun RingingContent(
     onNewPuzzle: () -> Unit,
     modifier: Modifier = Modifier,
     look: PuzzleLook = PuzzleLook.PANEL,
+    colorMarks: Boolean = false,
     /** Called whenever the puzzle is touched (the alarm is quieter while solving). */
-    onInteraction: () -> Unit = {}
+    onInteraction: () -> Unit = {},
+    onCancelTest: () -> Unit = {}
 ) {
     val currentOnInteraction by rememberUpdatedState(onInteraction)
     val puzzleModifier = Modifier.pointerInput(Unit) {
@@ -95,9 +100,9 @@ fun RingingContent(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Header(state, time)
-                        NewPuzzleButton(state, onNewPuzzle)
+                        Buttons(state, onNewPuzzle, onCancelTest)
                     }
-                    PuzzleArea(state, look, onSolved, puzzleModifier.weight(1f).fillMaxHeight())
+                    PuzzleArea(state, look, colorMarks, onSolved, puzzleModifier.weight(1f).fillMaxHeight())
                 }
             } else {
                 Column(
@@ -105,8 +110,8 @@ fun RingingContent(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Header(state, time, Modifier.padding(top = 16.dp))
-                    PuzzleArea(state, look, onSolved, puzzleModifier.weight(1f).fillMaxWidth())
-                    NewPuzzleButton(state, onNewPuzzle)
+                    PuzzleArea(state, look, colorMarks, onSolved, puzzleModifier.weight(1f).fillMaxWidth())
+                    Buttons(state, onNewPuzzle, onCancelTest)
                 }
             }
         }
@@ -118,6 +123,13 @@ private fun Header(state: RingingUiState, time: LocalTime, modifier: Modifier = 
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(formatTime(time), style = MaterialTheme.typography.displayLarge)
         val session = state.session ?: return@Column
+        if (session.test) {
+            Text(
+                stringResource(R.string.test_alarm),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        }
         if (session.labels.isNotEmpty()) {
             Text(
                 session.labels.joinToString(),
@@ -139,7 +151,13 @@ private fun Header(state: RingingUiState, time: LocalTime, modifier: Modifier = 
 }
 
 @Composable
-private fun PuzzleArea(state: RingingUiState, look: PuzzleLook, onSolved: () -> Unit, modifier: Modifier = Modifier) {
+private fun PuzzleArea(
+    state: RingingUiState,
+    look: PuzzleLook,
+    colorMarks: Boolean,
+    onSolved: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(modifier, contentAlignment = Alignment.Center) {
         val generated = state.puzzle
         if (generated == null) {
@@ -150,6 +168,7 @@ private fun PuzzleArea(state: RingingUiState, look: PuzzleLook, onSolved: () -> 
                     puzzle = generated.puzzle,
                     onSolved = { onSolved() },
                     look = look,
+                    colorMarks = colorMarks,
                     enabled = !state.solved,
                     modifier = Modifier.fillMaxSize().testTag(RINGING_PUZZLE_TAG)
                 )
@@ -172,9 +191,14 @@ private fun PuzzleArea(state: RingingUiState, look: PuzzleLook, onSolved: () -> 
 }
 
 @Composable
-private fun NewPuzzleButton(state: RingingUiState, onNewPuzzle: () -> Unit) {
-    OutlinedButton(onClick = onNewPuzzle, enabled = state.puzzle != null && !state.solved) {
-        Text(stringResource(R.string.new_puzzle))
+private fun Buttons(state: RingingUiState, onNewPuzzle: () -> Unit, onCancelTest: () -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        OutlinedButton(onClick = onNewPuzzle, enabled = state.puzzle != null && !state.solved) {
+            Text(stringResource(R.string.new_puzzle))
+        }
+        if (state.session?.test == true) {
+            Button(onClick = onCancelTest) { Text(stringResource(R.string.cancel_test)) }
+        }
     }
 }
 

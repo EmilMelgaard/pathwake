@@ -62,6 +62,7 @@ fun PlaygroundScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val container = LocalContext.current.appContainer
+    val settings by container.settings.current.collectAsStateWithLifecycle()
     PlaygroundScreen(
         state = state,
         onBack = onBack,
@@ -73,7 +74,8 @@ fun PlaygroundScreen(
         onNewPuzzle = viewModel::newPuzzle,
         onToggleSolution = viewModel::toggleSolution,
         onSolved = viewModel::onSolved,
-        modifier = modifier
+        modifier = modifier,
+        colorMarks = settings.colorMarks
     )
 }
 
@@ -94,7 +96,8 @@ internal fun PlaygroundScreen(
     onNewPuzzle: () -> Unit,
     onToggleSolution: () -> Unit,
     onSolved: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    colorMarks: Boolean = false
 ) {
     Scaffold(
         modifier = modifier,
@@ -125,12 +128,12 @@ internal fun PlaygroundScreen(
                     controls(
                         Modifier.width(320.dp).fillMaxHeight().verticalScroll(rememberScrollState()).padding(16.dp)
                     )
-                    PuzzleArea(state, onSolved, Modifier.weight(1f).fillMaxHeight().padding(16.dp))
+                    PuzzleArea(state, colorMarks, onSolved, Modifier.weight(1f).fillMaxHeight().padding(16.dp))
                 }
             } else {
                 Column(Modifier.fillMaxSize()) {
                     controls(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
-                    PuzzleArea(state, onSolved, Modifier.weight(1f).fillMaxWidth().padding(8.dp))
+                    PuzzleArea(state, colorMarks, onSolved, Modifier.weight(1f).fillMaxWidth().padding(8.dp))
                 }
             }
         }
@@ -201,7 +204,12 @@ private fun PlaygroundControls(
 }
 
 @Composable
-private fun PuzzleArea(state: PlaygroundUiState, onSolved: () -> Unit, modifier: Modifier = Modifier) {
+private fun PuzzleArea(
+    state: PlaygroundUiState,
+    colorMarks: Boolean,
+    onSolved: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(modifier, contentAlignment = Alignment.Center) {
         val generated = state.puzzle
         if (generated != null) {
@@ -210,6 +218,7 @@ private fun PuzzleArea(state: PlaygroundUiState, onSolved: () -> Unit, modifier:
                     puzzle = generated.puzzle,
                     onSolved = { onSolved() },
                     look = state.look,
+                    colorMarks = colorMarks,
                     solutionHint = generated.solution.takeIf { state.showSolution },
                     enabled = !state.generating,
                     modifier = Modifier.fillMaxSize().testTag(PUZZLE_TAG)

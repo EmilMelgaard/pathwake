@@ -3,6 +3,9 @@
 
     <!-- Puzzle -->
     <string name="puzzle_description">Line puzzle (grid size %1$d × %2$d). Drag the line from a start circle to an exit.</string>
+    <string name="puzzle_description_track">Line puzzle: a straight track from the start circle to the exit.</string>
+    <!-- Accessibility action that draws the line of a straight-track puzzle. -->
+    <string name="draw_line">Draw the line</string>
 
     <!-- Puzzle playground -->
     <string name="playground_title">Puzzle playground</string>
@@ -15,6 +18,8 @@
     <string name="difficulty_brutal">Brutal</string>
     <string name="puzzle_look">Look</string>
     <string name="puzzle_look_setting">Puzzle look</string>
+    <string name="color_marks">Color-blind marks</string>
+    <string name="color_marks_hint">Colored squares and stars get a mark for their color, so you can tell them apart without color vision.</string>
     <string name="look_panel">Panel</string>
     <string name="look_material">Material</string>
     <string name="new_puzzle">New puzzle</string>
@@ -116,6 +121,10 @@
     <string name="fewer_puzzles">Fewer puzzles</string>
     <string name="more_puzzles">More puzzles</string>
     <string name="try_puzzle">Try a puzzle</string>
+    <!-- Rings the alarm now, to try it out. -->
+    <string name="test_alarm_action">Test alarm</string>
+    <string name="test_alarm">Test</string>
+    <string name="cancel_test">Cancel</string>
     <string name="ringing_title">Ringing</string>
     <string name="auto_silence">Stop ringing</string>
     <string name="auto_silence_hint">If the puzzles aren\'t solved by then</string>

@@ -30,6 +30,9 @@ one chunk per branch + pull request; keep the plan updated when decisions change
     after a reboot before the first unlock. Don't read credential-protected storage (or shared media) from it.
     Build paths from `createDeviceProtectedStorageContext()` directly: helpers like `preferencesDataStoreFile()` go
     through the application context and silently end up in credential-protected storage.
+  - Backup rules (`res/xml/backup_rules.xml`, `data_extraction_rules.xml`) list what is backed up; new files are
+    left out unless added there. `RestoreAgent` sets restored alarms; it can't use `appContainer` (no Application
+    during a restore). Test with `adb shell bmgr` (local transport, `backupnow`, then uninstall and reinstall).
   - The app's minSdk is 29 without core library desugaring: avoid `java.time`/JDK APIs newer than Java 8 + API 29
     (lint's NewApi check catches them, e.g. `Duration.toHoursPart()`).
   - `:puzzle`: pure Kotlin/JVM puzzle engine (model, `Validator`, `Solver`, `Generator`, `PathTracer`).
@@ -76,6 +79,8 @@ android docs search "<query>"               # official Android knowledge base
 - `adb shell dumpsys audio` shows the alarm's player and any `AudioHardening` (Android 17) messages; the player's own
   volume (gradual volume, lower while drawing) is the `L dB` column of its track in `dumpsys media.audio_flinger`.
 - Custom sounds: `adb push` an audio file to `/sdcard/Download/` and add it from the sound picker.
+- Phone calls: `adb emu gsm call 5551234`, `adb emu gsm accept 5551234`, `adb emu gsm cancel 5551234`.
+- Accessibility: `adb shell settings put system font_scale 2.0` (reset to `1.0`) for large text.
 
 ## Rules
 

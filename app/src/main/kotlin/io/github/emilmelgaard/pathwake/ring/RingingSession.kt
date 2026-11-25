@@ -19,6 +19,8 @@ import java.time.ZonedDateTime
  *   [stopWhenSoundEnds], until the sound has played once).
  * @property seed puzzles are generated from `seed + puzzleNumber`, so they survive the app being restarted.
  * @property puzzleNumber counts solved and replaced ("new puzzle") puzzles.
+ * @property test started from the app to try an alarm: it can be cancelled, leaves no notifications and isn't
+ *   resumed after a restart.
  */
 data class RingingSession(
     val alarmIds: List<Long>,
@@ -33,7 +35,8 @@ data class RingingSession(
     val puzzleNumber: Int = 0,
     val sound: AlarmSound = AlarmSound.Default,
     val vibrate: Boolean = true,
-    val stopWhenSoundEnds: Boolean = false
+    val stopWhenSoundEnds: Boolean = false,
+    val test: Boolean = false
 ) {
     val puzzleSeed: Long get() = seed + puzzleNumber
 

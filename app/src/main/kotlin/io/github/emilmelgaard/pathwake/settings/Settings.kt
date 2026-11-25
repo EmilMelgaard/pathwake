@@ -36,11 +36,13 @@ data class AlarmDefaults(
  * @property crescendoSeconds how long a ringing alarm takes to reach full volume; 0 starts at full volume.
  * @property lockVolumeButtons volume buttons (and other ways of turning down the alarm volume) don't lower a ringing
  *   alarm.
+ * @property colorMarks colored puzzle symbols get a mark per color, so they don't rely on color vision.
  */
 data class Settings(
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
     val puzzleLook: PuzzleLook = PuzzleLook.PANEL,
+    val colorMarks: Boolean = false,
     val firstDayOfWeek: DayOfWeek? = null,
     val crescendoSeconds: Int = 0,
     val solvingVolume: SolvingVolume = SolvingVolume.LOWER,

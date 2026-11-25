@@ -8,7 +8,9 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RingingControllerTest {
@@ -82,6 +84,40 @@ class RingingControllerTest {
         assertEquals(2, session.puzzleCount)
         assertEquals(1, session.puzzleNumber)
         assertEquals(at.plusMinutes(30).toInstant(), session.silenceAt)
+    }
+
+    @Test
+    fun test_ringsLikeTheAlarmAndCanBeCancelled() {
+        assertTrue(controller.test(work, at))
+        val session = controller.session.value!!
+        assertTrue(session.test)
+        assertEquals(Difficulty.HARD, session.difficulty)
+        assertEquals(2, session.puzzleCount)
+
+        controller.cancelTest()
+        assertNull(controller.session.value)
+    }
+
+    @Test
+    fun aDueAlarm_replacesATest() {
+        controller.test(backup, at)
+        controller.newPuzzle(0)
+        controller.ring(listOf(work), at.plusMinutes(1))
+
+        val session = controller.session.value!!
+        assertFalse(session.test)
+        assertEquals(listOf(1L), session.alarmIds)
+        assertEquals(0, session.puzzleNumber)
+    }
+
+    @Test
+    fun aRingingAlarm_canNotBeTestedOrCancelled() {
+        controller.ring(listOf(work), at)
+
+        assertFalse(controller.test(backup, at))
+        controller.cancelTest()
+        assertEquals(listOf(1L), controller.session.value?.alarmIds)
+        assertFalse(controller.session.value!!.test)
     }
 
     @Test

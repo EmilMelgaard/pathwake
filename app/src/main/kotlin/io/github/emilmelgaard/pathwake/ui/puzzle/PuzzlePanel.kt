@@ -79,12 +79,11 @@ fun PuzzlePanel(
     puzzle: Puzzle,
     onSolved: (List<Pos>) -> Unit,
     modifier: Modifier = Modifier,
-    look: PuzzleLook = PuzzleLook.PANEL,
     colorMarks: Boolean = false,
     solutionHint: List<Pos>? = null,
     enabled: Boolean = true
 ) {
-    val colors = PuzzleColors.of(look)
+    val colors = PuzzleColors.Panel
     val tracer = remember(puzzle) { PathTracer(puzzle, PuzzleGeometry.tracerConfig) }
     var trace by remember(puzzle) { mutableStateOf(TraceSnapshot.EMPTY) }
     var feedback by remember(puzzle) { mutableStateOf<Feedback?>(null) }
@@ -216,12 +215,12 @@ private fun DrawScope.drawPuzzle(
         val center = g.toPx(cell)
         when (symbol) {
             is Square -> {
-                drawSquare(center, u, color, colors.symbolOutline)
+                drawSquare(center, u, color)
                 if (colorMarks) drawColorMark(center, u, symbol.color)
             }
 
             is Star -> {
-                drawStar(center, u, color, colors.symbolOutline)
+                drawStar(center, u, color)
                 if (colorMarks) drawColorMark(center, u, symbol.color)
             }
 
@@ -367,15 +366,14 @@ private fun linePath(g: PuzzleGeometry, nodes: List<Pos>, tip: Offset?) = Path()
     tip?.let { lineTo(it.x, it.y) }
 }
 
-private fun DrawScope.drawSquare(center: Offset, u: Float, color: Color, outline: Color?) {
+private fun DrawScope.drawSquare(center: Offset, u: Float, color: Color) {
     val side = 0.34f * u
     val topLeft = center - Offset(side / 2, side / 2)
     val radius = CornerRadius(0.09f * u)
     drawRoundRect(color, topLeft, Size(side, side), radius)
-    outline?.let { drawRoundRect(it, topLeft, Size(side, side), radius, style = Stroke(0.02f * u)) }
 }
 
-private fun DrawScope.drawStar(center: Offset, u: Float, color: Color, outline: Color?) {
+private fun DrawScope.drawStar(center: Offset, u: Float, color: Color) {
     // Outline of two overlapping squares, one rotated by 45 degrees.
     val outer = 0.23f * u
     val inner = outer * 0.7654f
@@ -389,7 +387,6 @@ private fun DrawScope.drawStar(center: Offset, u: Float, color: Color, outline: 
     }
     path.close()
     drawPath(path, color)
-    outline?.let { drawPath(path, it, style = Stroke(0.02f * u)) }
 }
 
 private fun DrawScope.drawTriangles(center: Offset, u: Float, count: Int, color: Color) {

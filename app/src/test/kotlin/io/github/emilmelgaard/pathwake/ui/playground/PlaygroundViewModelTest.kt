@@ -1,7 +1,6 @@
 package io.github.emilmelgaard.pathwake.ui.playground
 
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
-import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzleLook
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -65,13 +64,11 @@ class PlaygroundViewModelTest {
     }
 
     @Test
-    fun lookAndSolutionToggleDoNotRegenerate() = runTest(dispatcher) {
+    fun solutionToggle_doesNotRegenerate() = runTest(dispatcher) {
         val vm = viewModel()
         val puzzle = vm.uiState.value.puzzle
-        vm.selectLook(PuzzleLook.MATERIAL)
         vm.toggleSolution()
         advanceUntilIdle()
-        assertEquals(PuzzleLook.MATERIAL, vm.uiState.value.look)
         assertTrue(vm.uiState.value.showSolution)
         assertEquals(puzzle, vm.uiState.value.puzzle)
     }

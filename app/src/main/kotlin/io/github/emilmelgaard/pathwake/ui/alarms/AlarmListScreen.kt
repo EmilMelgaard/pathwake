@@ -147,11 +147,9 @@ fun AlarmListScreen(
     AlarmListContent(
         state = state,
         selectedAlarmId = selectedAlarmId,
+        // Missing permissions always show, even without alarms that are on: a one-time alarm turns off after ringing.
         notices = permissionNotices.copy(
             ringing = ringing != null,
-            // Only nag about permissions once there is an alarm that needs them.
-            missingPermissions = permissionNotices.missingPermissions.takeIf { state.items.any { it.alarm.enabled } }
-                .orEmpty(),
             volumeMuted = permissionNotices.volumeMuted && state.items.any { it.alarm.enabled }
         ),
         actions = AlarmListActions(

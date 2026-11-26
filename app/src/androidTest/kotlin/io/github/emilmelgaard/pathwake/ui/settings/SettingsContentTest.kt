@@ -15,6 +15,7 @@ import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import io.github.emilmelgaard.pathwake.settings.Settings
 import io.github.emilmelgaard.pathwake.settings.SolvingVolume
 import io.github.emilmelgaard.pathwake.settings.ThemeMode
+import io.github.emilmelgaard.pathwake.ui.common.VolumeState
 import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

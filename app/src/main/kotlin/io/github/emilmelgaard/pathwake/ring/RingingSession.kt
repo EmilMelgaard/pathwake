@@ -19,6 +19,8 @@ import java.time.ZonedDateTime
  *   [stopWhenSoundEnds], until the sound has played once).
  * @property seed puzzles are generated from `seed + puzzleNumber`, so they survive the app being restarted.
  * @property puzzleNumber counts solved and replaced ("new puzzle") puzzles.
+ * @property volume the own volume (see [Alarm.volume]) of the alarm whose sound plays; null: the device's alarm
+ *   volume.
  * @property test started from the app to try an alarm: it can be cancelled, leaves no notifications and isn't
  *   resumed after a restart.
  */
@@ -36,6 +38,7 @@ data class RingingSession(
     val sound: AlarmSound = AlarmSound.Default,
     val vibrate: Boolean = true,
     val stopWhenSoundEnds: Boolean = false,
+    val volume: Int? = null,
     val test: Boolean = false
 ) {
     val puzzleSeed: Long get() = seed + puzzleNumber
@@ -57,7 +60,9 @@ data class RingingSession(
             silenceAt = if (untilSolved) null else listOfNotNull(silenceAt, joined.silenceAt).maxOrNull(),
             stopWhenSoundEnds = !untilSolved && stopWhenSoundEnds && joined.stopWhenSoundEnds,
             sound = if (sound == AlarmSound.Silent) joined.sound else sound,
-            vibrate = vibrate || joined.vibrate
+            vibrate = vibrate || joined.vibrate,
+            // The volume goes with the sound.
+            volume = if (sound == AlarmSound.Silent) joined.volume else volume
         )
     }
 
@@ -67,6 +72,8 @@ data class RingingSession(
             val silences = alarms.map { it.autoSilence }
             val untilSolved = AutoSilence.Never in silences
             val minutes = silences.filterIsInstance<AutoSilence.After>().maxOfOrNull { it.minutes }
+            // The alarm whose sound plays, and whose own volume it plays at.
+            val playing = alarms.firstOrNull { it.sound != AlarmSound.Silent } ?: alarms.first()
             return RingingSession(
                 alarmIds = alarms.map { it.id },
                 labels = alarms.map { it.label.trim() }.filter { it.isNotEmpty() }.distinct(),
@@ -76,9 +83,10 @@ data class RingingSession(
                 difficulty = alarms.maxOf { it.difficulty },
                 puzzleCount = alarms.maxOf { it.puzzleCount },
                 seed = seed,
-                sound = alarms.map { it.sound }.firstOrNull { it != AlarmSound.Silent } ?: AlarmSound.Silent,
+                sound = playing.sound,
                 vibrate = alarms.any { it.vibrate },
-                stopWhenSoundEnds = !untilSolved && minutes == null
+                stopWhenSoundEnds = !untilSolved && minutes == null,
+                volume = playing.volume
             )
         }
     }

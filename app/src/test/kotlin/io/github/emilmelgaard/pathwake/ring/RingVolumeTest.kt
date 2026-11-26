@@ -32,6 +32,15 @@ class RingVolumeTest {
     }
 
     @Test
+    fun fade_goesDownFastAndUpSlowly() {
+        assertEquals(0.5f, RingVolume.fade(1f, 0.25f, Duration.ofMillis(150)), 0.001f)
+        assertEquals(0.25f, RingVolume.fade(1f, 0.25f, seconds(1)), 0.001f)
+        assertEquals(0.5f, RingVolume.fade(0.25f, 1f, Duration.ofMillis(750)), 0.001f)
+        assertEquals(1f, RingVolume.fade(0.25f, 1f, seconds(5)), 0.001f)
+        assertEquals(0.6f, RingVolume.fade(0.6f, 0.6f, seconds(1)), 0.001f)
+    }
+
+    @Test
     fun duringACall_isQuietButNeverLouderThanOtherwise() {
         assertEquals(0.125f, RingVolume.of(seconds(100), none, SolvingVolume.LOWER, null, inCall = true))
         assertEquals(0f, RingVolume.of(seconds(100), none, SolvingVolume.MUTE, seconds(2), inCall = true))

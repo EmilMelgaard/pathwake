@@ -137,6 +137,9 @@ class AlarmEditorViewModel(
 
     fun setVibrate(vibrate: Boolean) = edit { it.copy(vibrate = vibrate) }
 
+    /** [percent]: the alarm's own volume ([Alarm.volume]); null to ring at the device's alarm volume. */
+    fun setVolume(percent: Int?) = edit { it.copy(volume = percent) }
+
     /** Saves (and enables) the alarm. */
     fun save(onSaved: (SavedAlarm) -> Unit) {
         val current = draft.value ?: return

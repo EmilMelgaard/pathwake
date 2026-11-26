@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -67,6 +68,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -92,6 +94,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.emilmelgaard.pathwake.R
@@ -102,6 +105,8 @@ import io.github.emilmelgaard.pathwake.alarm.DateRange
 import io.github.emilmelgaard.pathwake.appContainer
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import io.github.emilmelgaard.pathwake.system.AlarmPermissions
+import io.github.emilmelgaard.pathwake.system.AlarmVolume
+import io.github.emilmelgaard.pathwake.system.VolumePreview
 import io.github.emilmelgaard.pathwake.ui.common.ChoiceField
 import io.github.emilmelgaard.pathwake.ui.common.DifficultyChips
 import io.github.emilmelgaard.pathwake.ui.common.LocalMessenger
@@ -109,6 +114,8 @@ import io.github.emilmelgaard.pathwake.ui.common.LocalUnsavedChangesGuard
 import io.github.emilmelgaard.pathwake.ui.common.PuzzleCountRow
 import io.github.emilmelgaard.pathwake.ui.common.SwitchRow
 import io.github.emilmelgaard.pathwake.ui.common.ValueRow
+import io.github.emilmelgaard.pathwake.ui.common.VolumeSlider
+import io.github.emilmelgaard.pathwake.ui.common.VolumeState
 import io.github.emilmelgaard.pathwake.ui.common.autoSilenceText
 import io.github.emilmelgaard.pathwake.ui.common.countdown
 import io.github.emilmelgaard.pathwake.ui.common.currentLocale
@@ -148,8 +155,19 @@ data class AlarmEditorActions(
     val onPuzzleCountChange: (Int) -> Unit = {},
     val onAutoSilenceChange: (AutoSilence) -> Unit = {},
     val onSoundChange: (AlarmSound) -> Unit = {},
-    val onVibrateChange: (Boolean) -> Unit = {}
+    val onVibrateChange: (Boolean) -> Unit = {},
+    /** The alarm's own volume in percent ([Alarm.volume]), or null. */
+    val onVolumeChange: (Int?) -> Unit = {},
+    val onTestVolume: (Boolean) -> Unit = {}
 )
+
+/**
+ * The device's alarm volume scale, which an alarm's own volume is set on.
+ *
+ * @property deviceLevel the device's alarm volume, where an alarm's own volume starts.
+ * @property testing a sound plays at the alarm's own volume.
+ */
+data class AlarmVolumeScale(val min: Int = 1, val max: Int = 7, val deviceLevel: Int = 5, val testing: Boolean = false)
 
 @Composable
 fun AlarmEditorScreen(
@@ -188,20 +206,57 @@ fun AlarmEditorScreen(
         save()
     }
 
+    fun saveAskingPermission() {
+        // A ringing alarm needs notifications to show its puzzles: ask once, when the first alarm is saved.
+        if (AlarmPermissions.needsNotificationPermission(context) &&
+            !container.preferences.notificationPermissionRequested
+        ) {
+            container.preferences.notificationPermissionRequested = true
+            AlarmPermissions.requestNotifications(notificationPermission)
+        } else {
+            save()
+        }
+    }
+
+    // The first time an alarm is set with a difficulty that hasn't been solved yet, the user gets to try it first.
+    var unsolved by rememberSaveable { mutableStateOf<Difficulty?>(null) }
+    unsolved?.let { difficulty ->
+        UnsolvedDifficultyDialog(
+            difficulty = difficulty,
+            onTry = {
+                unsolved = null
+                onTryPuzzle(difficulty)
+            },
+            onSaveAnyway = {
+                unsolved = null
+                container.progress.warned(difficulty)
+                saveAskingPermission()
+            },
+            onDismiss = { unsolved = null }
+        )
+    }
+
+    // Trying the alarm's own volume sets the device's alarm volume while the sound plays.
+    val alarmVolume = remember { AlarmVolume(context) }
+    val volumePreview = remember { VolumePreview(context, container.soundLibrary) }
+    var testingVolume by remember { mutableStateOf(false) }
+    var deviceLevel by remember { mutableIntStateOf(alarmVolume.level) }
+    fun stopVolumeTest() {
+        volumePreview.stop()
+        testingVolume = false
+    }
+    LifecycleResumeEffect(volumePreview) {
+        deviceLevel = alarmVolume.level
+        onPauseOrDispose { stopVolumeTest() }
+    }
+
     AlarmEditorContent(
         state = state,
         actions = AlarmEditorActions(
             onClose = { guard.runOrConfirm(onClose) },
             onSave = {
-                // A ringing alarm needs notifications to show its puzzles: ask once, when the first alarm is saved.
-                if (AlarmPermissions.needsNotificationPermission(context) &&
-                    !container.preferences.notificationPermissionRequested
-                ) {
-                    container.preferences.notificationPermissionRequested = true
-                    AlarmPermissions.requestNotifications(notificationPermission)
-                } else {
-                    save()
-                }
+                val difficulty = state.alarm.difficulty
+                if (container.progress.needsWarning(difficulty)) unsolved = difficulty else saveAskingPermission()
             },
             onDelete = {
                 viewModel.delete { alarm ->
@@ -214,6 +269,7 @@ fun AlarmEditorScreen(
             },
             onTryPuzzle = onTryPuzzle,
             onTest = {
+                stopVolumeTest()
                 // Tests what is in the editor, saved or not.
                 container.testAlarm(state.alarm)
                 context.startActivity(RingingActivity.intent(context))
@@ -228,16 +284,55 @@ fun AlarmEditorScreen(
             onDifficultyChange = viewModel::setDifficulty,
             onPuzzleCountChange = viewModel::setPuzzleCount,
             onAutoSilenceChange = viewModel::setAutoSilence,
-            onSoundChange = viewModel::setSound,
-            onVibrateChange = viewModel::setVibrate
+            onSoundChange = {
+                stopVolumeTest()
+                viewModel.setSound(it)
+            },
+            onVibrateChange = viewModel::setVibrate,
+            onVolumeChange = { percent ->
+                viewModel.setVolume(percent)
+                if (percent == null) stopVolumeTest() else volumePreview.setLevel(alarmVolume.levelOf(percent))
+            },
+            onTestVolume = { test ->
+                val percent = state.alarm.volume
+                if (test && percent != null) {
+                    volumePreview.play(state.alarm.sound, alarmVolume.levelOf(percent))
+                    testingVolume = true
+                } else {
+                    stopVolumeTest()
+                }
+            }
         ),
-        modifier = modifier
+        modifier = modifier,
+        volumeScale = AlarmVolumeScale(alarmVolume.min, alarmVolume.max, deviceLevel, testingVolume)
+    )
+}
+
+@Composable
+private fun UnsolvedDifficultyDialog(
+    difficulty: Difficulty,
+    onTry: () -> Unit,
+    onSaveAnyway: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val name = difficultyName(difficulty)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.unsolved_title, name)) },
+        text = { Text(stringResource(R.string.unsolved_text, name)) },
+        confirmButton = { TextButton(onClick = onTry) { Text(stringResource(R.string.try_puzzle)) } },
+        dismissButton = { TextButton(onClick = onSaveAnyway) { Text(stringResource(R.string.save_anyway)) } }
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlarmEditorContent(state: AlarmEditorUiState, actions: AlarmEditorActions, modifier: Modifier = Modifier) {
+fun AlarmEditorContent(
+    state: AlarmEditorUiState,
+    actions: AlarmEditorActions,
+    modifier: Modifier = Modifier,
+    volumeScale: AlarmVolumeScale = AlarmVolumeScale()
+) {
     val inputModeManager = LocalInputModeManager.current
     Scaffold(
         // The list-detail scaffold moves focus into the detail pane when its layout changes (e.g. when a phone is
@@ -301,7 +396,7 @@ fun AlarmEditorContent(state: AlarmEditorUiState, actions: AlarmEditorActions, m
                 HorizontalDivider()
                 PuzzleSection(state.alarm, actions)
                 HorizontalDivider()
-                RingingSection(state.alarm, actions)
+                RingingSection(state.alarm, volumeScale, actions)
                 Spacer(Modifier.padding(bottom = 16.dp))
             }
         }
@@ -580,7 +675,7 @@ private fun PuzzleSection(alarm: Alarm, actions: AlarmEditorActions) {
 }
 
 @Composable
-private fun RingingSection(alarm: Alarm, actions: AlarmEditorActions) {
+private fun RingingSection(alarm: Alarm, scale: AlarmVolumeScale, actions: AlarmEditorActions) {
     var picking by rememberSaveable { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
@@ -589,6 +684,22 @@ private fun RingingSection(alarm: Alarm, actions: AlarmEditorActions) {
             modifier = Modifier.semantics { heading() }
         )
         ValueRow(stringResource(R.string.sound), soundTitle(alarm.sound), onClick = { picking = true })
+        SwitchRow(
+            title = stringResource(R.string.own_volume),
+            description = stringResource(if (alarm.volume == null) R.string.own_volume_off else R.string.own_volume_on),
+            checked = alarm.volume != null,
+            onCheckedChange = { on ->
+                actions.onVolumeChange(if (on) AlarmVolume.percentOf(scale.deviceLevel, scale.min, scale.max) else null)
+            }
+        )
+        alarm.volume?.let { percent ->
+            VolumeSlider(
+                VolumeState(AlarmVolume.levelOf(percent, scale.min, scale.max), scale.min, scale.max),
+                scale.testing,
+                onLevelChange = { actions.onVolumeChange(AlarmVolume.percentOf(it, scale.min, scale.max)) },
+                onTest = actions.onTestVolume
+            )
+        }
         SwitchRow(stringResource(R.string.vibrate), alarm.vibrate, actions.onVibrateChange)
         ChoiceField(
             label = stringResource(R.string.auto_silence),

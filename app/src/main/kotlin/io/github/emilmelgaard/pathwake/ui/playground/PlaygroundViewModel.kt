@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import io.github.emilmelgaard.pathwake.puzzle.GeneratedPuzzle
 import io.github.emilmelgaard.pathwake.puzzle.Generator
-import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzleLook
 import kotlin.random.Random
 import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineDispatcher
@@ -20,7 +19,6 @@ import kotlinx.coroutines.withContext
 
 data class PlaygroundUiState(
     val difficulty: Difficulty = Difficulty.MEDIUM,
-    val look: PuzzleLook = PuzzleLook.PANEL,
     val puzzle: GeneratedPuzzle? = null,
     val generating: Boolean = true,
     val generationMillis: Long = 0,
@@ -32,11 +30,10 @@ data class PlaygroundUiState(
 /** Lets the user try generated puzzles outside of an alarm. */
 class PlaygroundViewModel(
     initialDifficulty: Difficulty = Difficulty.MEDIUM,
-    initialLook: PuzzleLook = PuzzleLook.PANEL,
     private val generatorDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val nextSeed: () -> Long = { Random.nextLong() }
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(PlaygroundUiState(difficulty = initialDifficulty, look = initialLook))
+    private val _uiState = MutableStateFlow(PlaygroundUiState(difficulty = initialDifficulty))
     val uiState: StateFlow<PlaygroundUiState> = _uiState.asStateFlow()
 
     private var generation: Job? = null
@@ -50,8 +47,6 @@ class PlaygroundViewModel(
         _uiState.update { it.copy(difficulty = difficulty) }
         newPuzzle()
     }
-
-    fun selectLook(look: PuzzleLook) = _uiState.update { it.copy(look = look) }
 
     fun toggleSolution() = _uiState.update { it.copy(showSolution = !it.showSolution) }
 

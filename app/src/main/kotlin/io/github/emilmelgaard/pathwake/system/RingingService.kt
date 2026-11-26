@@ -30,6 +30,7 @@ class RingingService : Service() {
     private lateinit var player: AlarmPlayer
     private lateinit var vibration: AlarmVibration
     private lateinit var audioManager: AudioManager
+    private lateinit var alarmVolume: AlarmVolume
     private var ringing: Job? = null
 
     /** What is playing; ringing restarts when it changes (another alarm joined a silent one). */
@@ -49,6 +50,7 @@ class RingingService : Service() {
         player = AlarmPlayer(this)
         vibration = AlarmVibration(this)
         audioManager = getSystemService(AudioManager::class.java)
+        alarmVolume = AlarmVolume(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -79,9 +81,18 @@ class RingingService : Service() {
         val streamFloor = StreamFloor()
         var shown: RingingSession? = null
         var wasInCall = false
+        var ownVolume: Int? = null
+        var volume: Float? = null
         since = Instant.now()
+        var lastTick = since
         while (true) {
             val session = container.ringing.session.value ?: break
+            if (session.volume != ownVolume) {
+                ownVolume = session.volume
+                // A joined alarm's sound can replace a silent one's, with or without its own volume.
+                ownVolume?.let(::setOwnVolume) ?: restoreVolume()
+                streamFloor.reset()
+            }
             val wanted = Playback(session.sound, session.vibrate, session.stopWhenSoundEnds)
             if (wanted != playback) start(wanted)
             if (session != shown) {
@@ -104,11 +115,30 @@ class RingingService : Service() {
             // The call had audio focus, so music and other media may come back over the alarm.
             if (wasInCall && !inCall) player.regainFocus()
             wasInCall = inCall
-            player.setVolume(volume(settings, now, inCall))
+            val target = volume(settings, now, inCall)
+            val faded = volume?.let { RingVolume.fade(it, target, Duration.between(lastTick, now)) } ?: target
+            player.setVolume(faded)
+            volume = faded
+            lastTick = now
             if (settings.lockVolumeButtons) streamFloor.keep()
             delay(TICK_MILLIS)
         }
         stop()
+    }
+
+    /** Sets the alarm stream to an alarm's own volume, remembering the device's volume (once) to restore it later. */
+    private fun setOwnVolume(percent: Int) {
+        val preferences = appContainer.preferences
+        if (preferences.alarmVolumeToRestore == null) preferences.alarmVolumeToRestore = alarmVolume.level
+        alarmVolume.level = alarmVolume.levelOf(percent)
+    }
+
+    private fun restoreVolume() {
+        val preferences = appContainer.preferences
+        preferences.alarmVolumeToRestore?.let {
+            alarmVolume.level = it
+            preferences.alarmVolumeToRestore = null
+        }
     }
 
     private fun start(wanted: Playback) {
@@ -155,6 +185,11 @@ class RingingService : Service() {
     private inner class StreamFloor {
         private var floor = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
 
+        /** Takes the current level as the floor, after the app changed it. */
+        fun reset() {
+            floor = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
+        }
+
         fun keep() {
             val level = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
             if (level > floor) {
@@ -168,6 +203,7 @@ class RingingService : Service() {
     private fun stop() {
         player.stop()
         vibration.stop()
+        restoreVolume()
         playback = null
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -177,6 +213,7 @@ class RingingService : Service() {
         isRunning = false
         player.stop()
         vibration.stop()
+        restoreVolume()
         scope.cancel()
         super.onDestroy()
     }
@@ -184,7 +221,8 @@ class RingingService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     companion object {
-        private const val TICK_MILLIS = 200L
+        // Short, so volume fades are smooth.
+        private const val TICK_MILLIS = 50L
 
         /** Audio modes of an incoming, ongoing (phone) or VoIP call; none need a permission to read. */
         private val CALL_MODES = setOf(

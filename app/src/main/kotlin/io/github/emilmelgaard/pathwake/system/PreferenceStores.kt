@@ -68,6 +68,7 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
             sound = AlarmSound.parse(preferences.getString(SOUND, null), preferences.getString(SOUND_TITLE, null)),
             vibrate = preferences.getBoolean(VIBRATE, true),
             stopWhenSoundEnds = preferences.getBoolean(STOP_WHEN_SOUND_ENDS, false),
+            volume = if (preferences.contains(VOLUME)) preferences.getInt(VOLUME, 100) else null,
             test = preferences.getBoolean(TEST, false)
         )
     }.getOrNull()
@@ -89,6 +90,7 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
         session.sound.title?.let { putString(SOUND_TITLE, it) }
         putBoolean(VIBRATE, session.vibrate)
         putBoolean(STOP_WHEN_SOUND_ENDS, session.stopWhenSoundEnds)
+        session.volume?.let { putInt(VOLUME, it) }
         putBoolean(TEST, session.test)
     }
 
@@ -107,6 +109,7 @@ class PreferencesRingingSessionStore(context: Context) : RingingSessionStore {
         const val SOUND_TITLE = "sound_title"
         const val VIBRATE = "vibrate"
         const val STOP_WHEN_SOUND_ENDS = "stop_when_sound_ends"
+        const val VOLUME = "volume"
         const val TEST = "test"
 
         /** Unit separator: can't be typed into a label. */
@@ -123,7 +126,53 @@ class AppPreferences(context: Context) {
         get() = preferences.getBoolean(NOTIFICATION_PERMISSION_REQUESTED, false)
         set(value) = preferences.edit { putBoolean(NOTIFICATION_PERMISSION_REQUESTED, value) }
 
+    /**
+     * The device's alarm volume from before an alarm with its own volume started ringing, to restore afterwards (kept
+     * here, so it survives the alarm being cut off by a restart); null when no alarm changed it.
+     */
+    var alarmVolumeToRestore: Int?
+        get() = if (preferences.contains(
+                ALARM_VOLUME_TO_RESTORE
+            )
+        ) {
+            preferences.getInt(ALARM_VOLUME_TO_RESTORE, 0)
+        } else {
+            null
+        }
+        set(value) = preferences.edit(commit = true) {
+            if (value == null) remove(ALARM_VOLUME_TO_RESTORE) else putInt(ALARM_VOLUME_TO_RESTORE, value)
+        }
+
     private companion object {
         const val NOTIFICATION_PERMISSION_REQUESTED = "notification_permission_requested"
+        const val ALARM_VOLUME_TO_RESTORE = "alarm_volume_to_restore"
+    }
+}
+
+/**
+ * Which difficulties the user has solved a puzzle of (in the playground, a test or an alarm), and which ones they
+ * were warned about before setting an alarm with them. Backed up, unlike the other stores.
+ */
+class PuzzleProgress(context: Context) {
+    private val preferences = context.devicePreferences("progress")
+
+    fun solved(difficulty: Difficulty) = add(SOLVED, difficulty)
+
+    fun warned(difficulty: Difficulty) = add(WARNED, difficulty)
+
+    /** Whether to warn before setting an alarm with [difficulty]: once, unless a puzzle of it was solved. */
+    fun needsWarning(difficulty: Difficulty): Boolean =
+        difficulty != Difficulty.TRIVIAL && difficulty.name !in get(SOLVED) && difficulty.name !in get(WARNED)
+
+    private fun get(key: String): Set<String> = preferences.getStringSet(key, null).orEmpty()
+
+    private fun add(key: String, difficulty: Difficulty) {
+        val names = get(key)
+        if (difficulty.name !in names) preferences.edit { putStringSet(key, names + difficulty.name) }
+    }
+
+    private companion object {
+        const val SOLVED = "solved"
+        const val WARNED = "warned"
     }
 }

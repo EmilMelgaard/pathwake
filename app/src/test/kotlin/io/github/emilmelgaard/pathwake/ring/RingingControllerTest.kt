@@ -141,6 +141,26 @@ class RingingControllerTest {
     }
 
     @Test
+    fun ownVolume_goesWithTheSoundThatPlays() {
+        val birds = AlarmSound.Custom("1_Birds.mp3", "Birds")
+        val silent = work.copy(sound = AlarmSound.Silent, volume = 90)
+        val quietBirds = backup.copy(sound = birds, volume = 30)
+
+        controller.ring(listOf(silent, quietBirds, work.copy(id = 3, volume = 80)), at)
+        assertEquals(30, controller.session.value?.volume)
+
+        controller.stop()
+        controller.ring(listOf(work.copy(volume = null), quietBirds), at)
+        assertEquals(null, controller.session.value?.volume)
+
+        controller.stop()
+        controller.ring(listOf(silent), at)
+        controller.ring(listOf(quietBirds), at.plusMinutes(1))
+        assertEquals(birds, controller.session.value?.sound)
+        assertEquals(30, controller.session.value?.volume)
+    }
+
+    @Test
     fun whenTheSoundEnds_onlyIfEveryAlarmSaysSo() {
         val once = work.copy(autoSilence = AutoSilence.WhenSoundEnds)
         controller.ring(listOf(once, backup.copy(autoSilence = AutoSilence.WhenSoundEnds)), at)

@@ -18,6 +18,7 @@ import io.github.emilmelgaard.pathwake.system.AndroidRinger
 import io.github.emilmelgaard.pathwake.system.AppPreferences
 import io.github.emilmelgaard.pathwake.system.PreferencesRingingSessionStore
 import io.github.emilmelgaard.pathwake.system.PreferencesSchedulerState
+import io.github.emilmelgaard.pathwake.system.PuzzleProgress
 import io.github.emilmelgaard.pathwake.system.SoundLibrary
 import java.io.File
 import java.time.ZonedDateTime
@@ -42,6 +43,7 @@ class AppContainer(context: Context) {
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     val preferences by lazy { AppPreferences(context) }
+    val progress by lazy { PuzzleProgress(context) }
     val settings by lazy {
         // Not preferencesDataStoreFile(): it resolves against the application context, which isn't device protected.
         val dataStore = PreferenceDataStoreFactory.create(scope = scope) {

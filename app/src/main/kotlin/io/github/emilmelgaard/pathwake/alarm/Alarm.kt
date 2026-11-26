@@ -25,6 +25,8 @@ data class Occurrence(val at: ZonedDateTime, val alarms: List<Alarm>)
  * @property skippedDate a repeating alarm doesn't ring on this day ("skip next").
  * @property puzzleCount number of puzzles to solve to stop the alarm.
  * @property autoSilence when the alarm stops ringing by itself if its puzzles aren't solved.
+ * @property volume the alarm volume while this alarm rings, in percent of the device's alarm volume range; null: the
+ *   device's alarm volume (set in the app's settings).
  */
 data class Alarm(
     val id: Long = 0,
@@ -39,10 +41,12 @@ data class Alarm(
     val puzzleCount: Int = 1,
     val autoSilence: AutoSilence = AutoSilence.DEFAULT,
     val sound: AlarmSound = AlarmSound.Default,
-    val vibrate: Boolean = true
+    val vibrate: Boolean = true,
+    val volume: Int? = null
 ) {
     init {
         require(puzzleCount in 1..MAX_PUZZLES) { "Puzzle count must be 1..$MAX_PUZZLES, was $puzzleCount" }
+        require(volume == null || volume in 0..100) { "Volume must be 0..100, was $volume" }
     }
 
     val repeats: Boolean get() = repeatDays.isNotEmpty()

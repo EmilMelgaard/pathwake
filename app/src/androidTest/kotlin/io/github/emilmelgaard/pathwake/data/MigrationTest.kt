@@ -56,6 +56,27 @@ class MigrationTest {
         }
     }
 
+    @Test
+    fun version3To4_letsAlarmsUseTheAlarmVolume() {
+        helper.createDatabase(DB, 3).use { db ->
+            db.execSQL(
+                """
+                INSERT INTO alarms (id, hour, minute, label, enabled, repeat_days, date_epoch_day, pauses,
+                    skipped_epoch_day, difficulty, puzzle_count, auto_silence_minutes, sound, sound_title, vibrate)
+                VALUES (4, 8, 30, '', 1, 0, NULL, '', NULL, 'MEDIUM', 1, NULL, 'default', NULL, 1)
+                """.trimIndent()
+            )
+        }
+
+        helper.runMigrationsAndValidate(DB, 4, true).use { db ->
+            db.query("SELECT difficulty, volume FROM alarms WHERE id = 4").use { row ->
+                row.moveToFirst()
+                assertEquals("MEDIUM", row.getString(0))
+                assertTrue(row.isNull(1))
+            }
+        }
+    }
+
     private companion object {
         const val DB = "migration-test.db"
     }

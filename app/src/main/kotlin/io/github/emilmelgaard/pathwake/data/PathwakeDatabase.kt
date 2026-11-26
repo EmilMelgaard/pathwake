@@ -36,13 +36,15 @@ interface AlarmDao {
 
 @Database(
     entities = [AlarmEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true,
     autoMigrations = [
         // 2: auto_silence_minutes
         AutoMigration(from = 1, to = 2),
         // 3: sound, sound_title, vibrate
-        AutoMigration(from = 2, to = 3)
+        AutoMigration(from = 2, to = 3),
+        // 4: volume
+        AutoMigration(from = 3, to = 4)
     ]
 )
 abstract class PathwakeDatabase : RoomDatabase() {

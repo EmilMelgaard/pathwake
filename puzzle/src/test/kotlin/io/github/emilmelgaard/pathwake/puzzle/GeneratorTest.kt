@@ -1,5 +1,6 @@
 package io.github.emilmelgaard.pathwake.puzzle
 
+import kotlin.random.Random
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -32,6 +33,8 @@ class GeneratorTest {
                 if (difficulty != Difficulty.TRIVIAL) {
                     assertTrue("$difficulty seed $seed has no symbols", puzzle.mechanics().isNotEmpty())
                 }
+                val squareColors = puzzle.symbols.values.filterIsInstance<Square>().map { it.color }.toSet()
+                assertTrue("$difficulty seed $seed: squares of one color", squareColors.size != 1)
                 val count = generated.solutionCount
                 if (count == null) {
                     unknownCounts++
@@ -98,6 +101,29 @@ class GeneratorTest {
     fun presetsUseTheirGridSizes() {
         assertEquals(3, Generator.generate(Difficulty.EASY, 7).puzzle.width)
         assertEquals(6, Generator.generate(Difficulty.BRUTAL, 7).puzzle.width)
+    }
+
+    @Test
+    fun squaresAlwaysHaveTwoColors() {
+        val spec = PuzzleSpec(4, 4, setOf(Mechanic.SQUARES), maxSolutions = 2, initialSymbols = 2)
+        for (seed in 1L..40L) {
+            val puzzle = Generator.generate(spec, seed)?.puzzle ?: continue
+            val colors = puzzle.symbols.values.filterIsInstance<Square>().map { it.color }.toSet()
+            assertTrue("seed $seed: ${colors.size} square colors", colors.size >= 2)
+        }
+    }
+
+    @Test
+    fun triangles_neverOnEasy_andRarerThanOtherMechanicsOnMedium() {
+        fun picked(difficulty: Difficulty) = (1L..2000L).flatMap { Generator.spec(difficulty, Random(it)).mechanics }
+            .groupingBy { it }
+            .eachCount()
+        assertEquals(null, picked(Difficulty.EASY)[Mechanic.TRIANGLES])
+        val medium = picked(Difficulty.MEDIUM)
+        val triangles = medium.getValue(Mechanic.TRIANGLES)
+        for (other in listOf(Mechanic.DOTS, Mechanic.SQUARES, Mechanic.STARS, Mechanic.TETRIS)) {
+            assertTrue("triangles $triangles, $other ${medium[other]}", triangles * 2 < medium.getValue(other))
+        }
     }
 
     @Test

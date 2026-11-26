@@ -48,7 +48,6 @@ import io.github.emilmelgaard.pathwake.puzzle.Difficulty
 import io.github.emilmelgaard.pathwake.puzzle.Generator
 import io.github.emilmelgaard.pathwake.puzzle.Mechanic
 import io.github.emilmelgaard.pathwake.ui.common.difficultyName
-import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzleLook
 import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzlePanel
 import io.github.emilmelgaard.pathwake.ui.theme.PathwakeTheme
 import kotlinx.coroutines.launch
@@ -58,7 +57,7 @@ fun PlaygroundScreen(
     initialDifficulty: Difficulty,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: PlaygroundViewModel = playgroundViewModel(initialDifficulty)
+    viewModel: PlaygroundViewModel = viewModel { PlaygroundViewModel(initialDifficulty) }
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val container = LocalContext.current.appContainer
@@ -67,23 +66,16 @@ fun PlaygroundScreen(
         state = state,
         onBack = onBack,
         onSelectDifficulty = viewModel::selectDifficulty,
-        onSelectLook = { look ->
-            viewModel.selectLook(look)
-            container.scope.launch { container.settings.update { it.copy(puzzleLook = look) } }
-        },
         onNewPuzzle = viewModel::newPuzzle,
         onToggleSolution = viewModel::toggleSolution,
-        onSolved = viewModel::onSolved,
+        onSolved = {
+            // Drawing the shown solution doesn't count as solving it.
+            if (!state.showSolution) state.puzzle?.difficulty?.let(container.progress::solved)
+            viewModel.onSolved()
+        },
         modifier = modifier,
         colorMarks = settings.colorMarks
     )
-}
-
-/** The playground starts with the puzzle look from the settings; changing it there changes the setting. */
-@Composable
-private fun playgroundViewModel(initialDifficulty: Difficulty): PlaygroundViewModel {
-    val container = LocalContext.current.appContainer
-    return viewModel { PlaygroundViewModel(initialDifficulty, container.settings.current.value.puzzleLook) }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,7 +84,6 @@ internal fun PlaygroundScreen(
     state: PlaygroundUiState,
     onBack: () -> Unit,
     onSelectDifficulty: (Difficulty) -> Unit,
-    onSelectLook: (PuzzleLook) -> Unit,
     onNewPuzzle: () -> Unit,
     onToggleSolution: () -> Unit,
     onSolved: () -> Unit,
@@ -117,7 +108,6 @@ internal fun PlaygroundScreen(
                 PlaygroundControls(
                     state,
                     onSelectDifficulty,
-                    onSelectLook,
                     onNewPuzzle,
                     onToggleSolution,
                     controlsModifier
@@ -145,7 +135,6 @@ internal fun PlaygroundScreen(
 private fun PlaygroundControls(
     state: PlaygroundUiState,
     onSelectDifficulty: (Difficulty) -> Unit,
-    onSelectLook: (PuzzleLook) -> Unit,
     onNewPuzzle: () -> Unit,
     onToggleSolution: () -> Unit,
     modifier: Modifier = Modifier
@@ -158,16 +147,6 @@ private fun PlaygroundControls(
                     selected = difficulty == state.difficulty,
                     onClick = { onSelectDifficulty(difficulty) },
                     label = { Text(difficultyName(difficulty)) }
-                )
-            }
-        }
-        Text(stringResource(R.string.puzzle_look), style = MaterialTheme.typography.titleSmall)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            PuzzleLook.entries.forEach { look ->
-                FilterChip(
-                    selected = look == state.look,
-                    onClick = { onSelectLook(look) },
-                    label = { Text(stringResource(look.label)) }
                 )
             }
         }
@@ -200,6 +179,11 @@ private fun PlaygroundControls(
             stringResource(R.string.solved_count, state.solvedCount),
             style = MaterialTheme.typography.bodyMedium
         )
+        Text(
+            stringResource(R.string.rules_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -217,7 +201,6 @@ private fun PuzzleArea(
                 PuzzlePanel(
                     puzzle = generated.puzzle,
                     onSolved = { onSolved() },
-                    look = state.look,
                     colorMarks = colorMarks,
                     solutionHint = generated.solution.takeIf { state.showSolution },
                     enabled = !state.generating,
@@ -243,13 +226,6 @@ private fun PuzzleArea(
 }
 
 internal const val PUZZLE_TAG = "puzzle"
-
-@get:StringRes
-private val PuzzleLook.label: Int
-    get() = when (this) {
-        PuzzleLook.PANEL -> R.string.look_panel
-        PuzzleLook.MATERIAL -> R.string.look_material
-    }
 
 @Composable
 private fun mechanicName(mechanic: Mechanic) = stringResource(
@@ -280,7 +256,6 @@ private fun PlaygroundScreenPreview() {
             ),
             onBack = {},
             onSelectDifficulty = {},
-            onSelectLook = {},
             onNewPuzzle = {},
             onToggleSolution = {},
             onSolved = {}

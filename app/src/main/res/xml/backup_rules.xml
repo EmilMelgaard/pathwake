@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Auto Backup before Android 12 (see data_extraction_rules.xml for Android 12+): alarms and settings only.
-    Custom sound files can be too big for the backup quota, and the alarm engine's state would be stale on a new device.
+    Auto Backup before Android 12 (see data_extraction_rules.xml for Android 12+): alarms, settings and puzzle progress
+    only. Custom sound files can be too big for the backup quota, and the alarm engine's state would be stale on a new
+    device.
 -->
 <full-backup-content>
     <include domain="device_database" path="." />
     <include domain="device_file" path="datastore" />
+    <include domain="device_sharedpref" path="progress.xml" />
 </full-backup-content>

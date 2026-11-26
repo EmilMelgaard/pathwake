@@ -44,4 +44,20 @@ object RingVolume {
         val volume = ramp * factor
         return if (inCall) min(volume, IN_CALL) else volume
     }
+
+    /** How long going from full volume to silence takes: quick, so touching the puzzle quiets the alarm at once. */
+    val FADE_DOWN: Duration = Duration.ofMillis(300)
+
+    /** How long going from silence to full volume takes: slow, so the alarm doesn't blast back. */
+    val FADE_UP: Duration = Duration.ofSeconds(3)
+
+    /** Moves the volume from [current] towards [target] for [elapsed] at the fade speeds. */
+    fun fade(current: Float, target: Float, elapsed: Duration): Float {
+        val millis = elapsed.toMillis().coerceAtLeast(0).toFloat()
+        return if (target < current) {
+            maxOf(target, current - millis / FADE_DOWN.toMillis())
+        } else {
+            minOf(target, current + millis / FADE_UP.toMillis())
+        }
+    }
 }

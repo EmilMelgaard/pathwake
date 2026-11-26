@@ -4,7 +4,6 @@ import io.github.emilmelgaard.pathwake.alarm.Alarm
 import io.github.emilmelgaard.pathwake.alarm.AlarmSound
 import io.github.emilmelgaard.pathwake.alarm.AutoSilence
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
-import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzleLook
 import java.time.DayOfWeek
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
@@ -18,7 +17,7 @@ data class AlarmDefaults(
     val puzzleCount: Int = 1,
     val autoSilence: AutoSilence = AutoSilence.DEFAULT,
     val sound: AlarmSound = AlarmSound.Default,
-    val vibrate: Boolean = true
+    val vibrate: Boolean = false
 ) {
     fun newAlarm(): Alarm = Alarm(
         difficulty = difficulty,
@@ -41,7 +40,6 @@ data class AlarmDefaults(
 data class Settings(
     val theme: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = false,
-    val puzzleLook: PuzzleLook = PuzzleLook.PANEL,
     val colorMarks: Boolean = false,
     val firstDayOfWeek: DayOfWeek? = null,
     val crescendoSeconds: Int = 0,

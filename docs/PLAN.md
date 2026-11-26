@@ -16,9 +16,10 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
 | Difficulty                 | Preset levels per alarm (Trivial, Easy, Medium, Hard, Expert, Brutal), each mapping to grid size + mechanics. Trivial is a straight line, like the door panels in the game |
 | Puzzles per alarm          | Configurable per alarm (1-10)                                                                              |
 | Escape hatches             | "New puzzle" button (same difficulty); auto-silence: never / after N minutes / when the sound ends          |
-| Volume while solving       | Setting: full / lower while drawing / mute while drawing (back to full after ~10 s idle)                   |
+| Volume while solving       | Setting: full / lower while drawing / mute while drawing (back to full after ~10 s idle); fades down fast, up slowly |
 | Anti-cheat                 | Setting (on by default): volume keys and other apps can't turn down a ringing alarm. Changing alarms never needs a puzzle |
-| Puzzle look                | Setting: "Panel" (Witness-inspired, original art, glowing line) or "Material" (follows app theme)          |
+| Puzzle look                | Witness-inspired panels (original art, glowing line). A "Material" look option was dropped after testing |
+| Rules                      | Never explained in the app (no spoilers): players find them out, or learn them in *The Witness*. Saving an alarm with a difficulty never solved warns once |
 | Languages                  | English; all strings in resources                                                                          |
 | Workflow                   | One branch + PR per chunk; CI attaches a debug APK                                                         |
 
@@ -54,12 +55,12 @@ APK, demoed on tablet and phone emulators, and iterated on with feedback before 
 - Repeat on weekdays, or one-time on the next occurrence or on a specific date.
 - Pause date ranges per alarm (for example vacations), and skip the next occurrence.
 - Sound: default, silent, system alarm tones, or custom audio files (copied into the app); vibration, preview.
-  Alarm volume and gradual volume increase are app-wide settings.
+  Alarm volume and gradual volume increase are app-wide settings; an alarm can have its own volume.
 - Puzzle difficulty and puzzle count per alarm, with a "try it" preview.
 - Auto-silence (never / N minutes / when the sound ends) and a missed-alarm notification.
 - Undo after delete, duplicate alarm, and defaults for new alarms.
 - Settings: alarm volume, gradual volume, volume while solving, anti-cheat, defaults for new alarms, theme
-  (system/light/dark, dynamic color), puzzle look, first day of week.
+  (system/light/dark, dynamic color), color-blind marks, first day of week.
 - No snooze.
 
 ## Chunks
@@ -92,13 +93,13 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
        dots must be covered by the line of their color. Either start can be dragged.
    - Presets:
      - Trivial: a straight track from a start to an exit on a square panel (a 3×0 grid), like the door panels.
-     - Easy: 3×3.
-     - Medium: 4×4, may use symmetry.
+     - Easy: 3×3, no triangles.
+     - Medium: 4×4, may use symmetry; triangles are rarer than the other mechanics.
      - Hard: 5×4 or 5×5, may add elimination.
      - Expert: 5×5, always one of subtractive tetris or elimination.
      - Brutal (called Fiendish before): 6×6, one or two advanced mechanics.
      - All levels draw from the base mechanics: dots, squares, stars, triangles, tetris.
-   - Caps: at most 8 stars and 2 elimination marks per puzzle.
+   - Caps: at most 8 stars and 2 elimination marks per puzzle. Colored squares always come in two colors or more.
    - Drawing: dots lie under the line (hidden when covered) and only show on top of it while they blink as an
      error. Rotatable tetris pieces are tilted, except shapes that look the same rotated (single blocks, squares).
    - Generation on desktop: Hard averages ~85 ms, Expert ~165 ms, Brutal ~285 ms (max < 1 s).
@@ -178,7 +179,17 @@ Each chunk ends with a demo (screenshots on the tablet and phone emulators), a P
        without sight; section titles are headings; weekday buttons grow and wrap with large text.
      - The app waits (up to 1 s, normally a few ms) for the settings before drawing its first frame, so it doesn't
        flash the wrong theme. The theme now uses the full generated color scheme (it mixed in default purple text).
-7. **Release**
+   - Feedback after testing v0.1.0 *(#10)*:
+     - Touching the puzzle fades the alarm down quickly (0.3 s from full to silent) and back up slowly (3 s).
+     - Own volume per alarm (off by default), with the same slider and test button as the app-wide alarm volume.
+       While it rings, the device's alarm volume is set to it and restored afterwards (also after a restart). Alarms
+       ringing together use the volume of the alarm whose sound plays.
+     - Saving an alarm with a difficulty (other than Trivial) that no puzzle of has been solved yet (in the
+       playground with the solution hidden, a test or an alarm) offers to try one first, once per difficulty. The
+       warning, the playground and About say the rules can be found out by experimenting or learned in The Witness.
+       Puzzle progress is backed up.
+     - The Material puzzle look is gone, the permission warning shows whenever a permission is missing (not only with
+       alarms on), and vibration is off by default for new alarms.7. **Release**
    - GitHub releases *(first: v0.1.0, a pre-release)*: tags build a signed APK, published on GitHub with its
      checksum and signing certificate fingerprint. One release key signs every build; it is meant to become the
      Play app signing key too, so GitHub and Play installs can update each other (see RELEASING.md).

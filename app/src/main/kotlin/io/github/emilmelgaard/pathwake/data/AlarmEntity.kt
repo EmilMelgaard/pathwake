@@ -32,7 +32,9 @@ data class AlarmEntity(
     /** See [AlarmSound.key]. */
     @ColumnInfo(defaultValue = "default") val sound: String,
     @ColumnInfo(name = "sound_title") val soundTitle: String?,
-    @ColumnInfo(defaultValue = "1") val vibrate: Boolean
+    @ColumnInfo(defaultValue = "1") val vibrate: Boolean,
+    /** Percent of the alarm volume range; null: the device's alarm volume. */
+    val volume: Int?
 )
 
 fun Alarm.toEntity() = AlarmEntity(
@@ -54,7 +56,8 @@ fun Alarm.toEntity() = AlarmEntity(
     },
     sound = sound.key,
     soundTitle = sound.title,
-    vibrate = vibrate
+    vibrate = vibrate,
+    volume = volume
 )
 
 fun AlarmEntity.toAlarm() = Alarm(
@@ -74,7 +77,8 @@ fun AlarmEntity.toAlarm() = Alarm(
         else -> AutoSilence.After(autoSilenceMinutes)
     },
     sound = AlarmSound.parse(sound, soundTitle),
-    vibrate = vibrate
+    vibrate = vibrate,
+    volume = volume?.coerceIn(0, 100)
 )
 
 private fun parseRange(text: String): DateRange? = runCatching {

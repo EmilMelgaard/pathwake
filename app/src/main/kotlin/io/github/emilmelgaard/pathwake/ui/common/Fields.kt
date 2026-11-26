@@ -23,8 +23,10 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -123,6 +125,33 @@ private fun Modifier.bleed(): Modifier = layout { measurable, constraints ->
 }
 
 private val LIST_ITEM_INSET = 16.dp
+
+/** An alarm volume [level] on the device's alarm volume scale. */
+data class VolumeState(val level: Int, val min: Int, val max: Int)
+
+/** An alarm volume slider with a button that plays (or stops) a sound to try it. */
+@Composable
+fun VolumeSlider(
+    volume: VolumeState,
+    testing: Boolean,
+    onLevelChange: (Int) -> Unit,
+    onTest: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+        val description = stringResource(R.string.alarm_volume)
+        Slider(
+            value = volume.level.toFloat(),
+            onValueChange = { onLevelChange(Math.round(it)) },
+            valueRange = volume.min.toFloat()..volume.max.toFloat().coerceAtLeast(volume.min + 1f),
+            steps = (volume.max - volume.min - 1).coerceAtLeast(0),
+            modifier = Modifier.weight(1f).semantics { contentDescription = description }
+        )
+        TextButton(onClick = { onTest(!testing) }) {
+            Text(stringResource(if (testing) R.string.stop_test else R.string.test_sound))
+        }
+    }
+}
 
 /** "Puzzles to solve  [−] 2 [+]". */
 @Composable

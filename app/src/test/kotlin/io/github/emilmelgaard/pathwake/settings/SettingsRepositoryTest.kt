@@ -6,7 +6,6 @@ import androidx.datastore.preferences.core.PreferencesSerializer
 import io.github.emilmelgaard.pathwake.alarm.AlarmSound
 import io.github.emilmelgaard.pathwake.alarm.AutoSilence
 import io.github.emilmelgaard.pathwake.puzzle.Difficulty
-import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzleLook
 import java.io.File
 import java.time.DayOfWeek
 import kotlinx.coroutines.test.TestScope
@@ -41,7 +40,6 @@ class SettingsRepositoryTest {
         val changed = Settings(
             theme = ThemeMode.DARK,
             dynamicColor = true,
-            puzzleLook = PuzzleLook.MATERIAL,
             colorMarks = true,
             firstDayOfWeek = DayOfWeek.SUNDAY,
             crescendoSeconds = 60,
@@ -52,7 +50,7 @@ class SettingsRepositoryTest {
                 puzzleCount = 4,
                 autoSilence = AutoSilence.WhenSoundEnds,
                 sound = AlarmSound.Custom("1_Birds.mp3", "Birds"),
-                vibrate = false
+                vibrate = true
             )
         )
         val repository = repository()

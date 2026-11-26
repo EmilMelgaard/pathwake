@@ -147,8 +147,26 @@ object Generator {
         val base = listOf(Mechanic.DOTS, Mechanic.SQUARES, Mechanic.STARS, Mechanic.TRIANGLES, Mechanic.TETRIS)
         val advanced = listOf(Mechanic.NEGATIVE_TETRIS, Mechanic.ELIMINATION)
 
-        fun pick(baseCount: Int, advancedCount: Int, gapChance: Float, multiChance: Float): Set<Mechanic> = buildSet {
-            addAll(base.shuffled(random).take(baseCount))
+        /** [triangleWeight]: how likely triangles are picked compared with each other base mechanic (0: never). */
+        fun pick(
+            baseCount: Int,
+            advancedCount: Int,
+            gapChance: Float,
+            multiChance: Float,
+            triangleWeight: Float = 1f
+        ): Set<Mechanic> = buildSet {
+            val options = base.associateWith { if (it == Mechanic.TRIANGLES) triangleWeight else 1f }
+                .filterValues { it > 0f }
+                .toMutableMap()
+            repeat(minOf(baseCount, options.size)) {
+                var r = random.nextFloat() * options.values.sum()
+                val chosen = options.keys.firstOrNull {
+                    r -= options.getValue(it)
+                    r < 0f
+                } ?: options.keys.last()
+                add(chosen)
+                options -= chosen
+            }
             addAll(advanced.shuffled(random).take(advancedCount))
             if (Mechanic.NEGATIVE_TETRIS in this) add(Mechanic.TETRIS)
             if (random.nextFloat() < gapChance) add(Mechanic.GAPS)
@@ -166,7 +184,7 @@ object Generator {
             Difficulty.EASY -> PuzzleSpec(
                 width = 3,
                 height = 3,
-                mechanics = pick(1, 0, gapChance = 0.3f, multiChance = 0f),
+                mechanics = pick(1, 0, gapChance = 0.3f, multiChance = 0f, triangleWeight = 0f),
                 maxSolutions = 3,
                 minPathFraction = 0.3f,
                 initialSymbols = 2,
@@ -179,7 +197,7 @@ object Generator {
             Difficulty.MEDIUM -> PuzzleSpec(
                 width = 4,
                 height = 4,
-                mechanics = pick(2, 0, gapChance = 0.3f, multiChance = 0.2f),
+                mechanics = pick(2, 0, gapChance = 0.3f, multiChance = 0.2f, triangleWeight = 0.35f),
                 symmetry = symmetry(0.15f),
                 maxSolutions = 2,
                 minPathFraction = 0.35f,
@@ -690,8 +708,9 @@ object Generator {
          * runs out of steps without finding an alternative, randomized probes look for one; if they find none either,
          * the puzzle is accepted with an unknown (but evidently small) number of solutions.
          */
-        private fun refine(): Candidate {
+        private fun refine(): Candidate? {
             while (true) {
+                if (!squaresHaveTwoColors()) return null
                 val puzzle = build()
                 val result = budget.solve(puzzle, maxSolutions = spec.maxSolutions + 1, maxSteps = SOLVE_STEPS)
                 if (result.exhaustive) return Candidate(puzzle, solution, result.solutions.size, meetsTarget = true)
@@ -714,6 +733,20 @@ object Generator {
                     return Candidate(puzzle, solution, null, meetsTarget = false)
                 }
             }
+        }
+
+        /**
+         * Squares of a single color don't constrain the line, so if all squares have the same color, this adds one
+         * of another color. False if that isn't possible.
+         */
+        private fun squaresHaveTwoColors(): Boolean {
+            val colors = symbols.values.filterIsInstance<Square>().map { it.color }.toSet()
+            if (colors.size != 1) return true
+            return emptyCells()
+                .map { it to regionColor.getValue(regionOfCell.getValue(it)) }
+                .filter { (_, color) -> color !in colors }
+                .shuffled(random)
+                .any { (cell, color) -> tryApply(Change(symbols = mapOf(cell to Square(color)))) }
         }
 
         private fun sameSolution(path: List<Pos>) = path == solution

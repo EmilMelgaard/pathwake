@@ -59,19 +59,17 @@ import io.github.emilmelgaard.pathwake.ui.common.DifficultyChips
 import io.github.emilmelgaard.pathwake.ui.common.PuzzleCountRow
 import io.github.emilmelgaard.pathwake.ui.common.SwitchRow
 import io.github.emilmelgaard.pathwake.ui.common.ValueRow
+import io.github.emilmelgaard.pathwake.ui.common.VolumeSlider
+import io.github.emilmelgaard.pathwake.ui.common.VolumeState
 import io.github.emilmelgaard.pathwake.ui.common.autoSilenceText
 import io.github.emilmelgaard.pathwake.ui.common.crescendoText
 import io.github.emilmelgaard.pathwake.ui.common.currentLocale
 import io.github.emilmelgaard.pathwake.ui.common.soundTitle
-import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzleLook
 import io.github.emilmelgaard.pathwake.ui.sound.SoundPickerDialog
 import java.time.DayOfWeek
 import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import kotlinx.coroutines.launch
-
-/** The device's alarm volume as shown in the settings. */
-data class VolumeState(val level: Int, val min: Int, val max: Int)
 
 /** Callbacks of the settings screen. */
 data class SettingsActions(
@@ -196,19 +194,7 @@ private fun RingingSettings(settings: Settings, volume: VolumeState, testing: Bo
     SectionTitle(stringResource(R.string.ringing_title))
     Column {
         Text(stringResource(R.string.alarm_volume), style = MaterialTheme.typography.titleSmall)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            val description = stringResource(R.string.alarm_volume)
-            Slider(
-                value = volume.level.toFloat(),
-                onValueChange = { actions.onVolumeChange(Math.round(it)) },
-                valueRange = volume.min.toFloat()..volume.max.toFloat().coerceAtLeast(volume.min + 1f),
-                steps = (volume.max - volume.min - 1).coerceAtLeast(0),
-                modifier = Modifier.weight(1f).semantics { contentDescription = description }
-            )
-            TextButton(onClick = { actions.onTestSound(!testing) }) {
-                Text(stringResource(if (testing) R.string.stop_test else R.string.test_sound))
-            }
-        }
+        VolumeSlider(volume, testing, actions.onVolumeChange, actions.onTestSound)
         Text(
             stringResource(R.string.alarm_volume_hint),
             style = MaterialTheme.typography.bodySmall,
@@ -292,14 +278,6 @@ private fun AppearanceSettings(settings: Settings, actions: SettingsActions) {
             onCheckedChange = { on -> actions.onUpdate { it.copy(dynamicColor = on) } }
         )
     }
-    ChoiceField(
-        label = stringResource(R.string.puzzle_look_setting),
-        value = settings.puzzleLook,
-        choices = PuzzleLook.entries,
-        text = { lookText(it) },
-        onChange = { look -> actions.onUpdate { it.copy(puzzleLook = look) } },
-        modifier = Modifier.fillMaxWidth()
-    )
     SwitchRow(
         title = stringResource(R.string.color_marks),
         description = stringResource(R.string.color_marks_hint),
@@ -350,14 +328,6 @@ private fun themeText(theme: ThemeMode) = stringResource(
         ThemeMode.SYSTEM -> R.string.theme_system
         ThemeMode.LIGHT -> R.string.theme_light
         ThemeMode.DARK -> R.string.theme_dark
-    }
-)
-
-@Composable
-private fun lookText(look: PuzzleLook) = stringResource(
-    when (look) {
-        PuzzleLook.PANEL -> R.string.look_panel
-        PuzzleLook.MATERIAL -> R.string.look_material
     }
 )
 

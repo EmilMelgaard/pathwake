@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Alarms and settings are backed up. Custom sound files only move with a device-to-device transfer: they can be too
-    big for the cloud backup quota. The alarm engine's state (scheduled alarm, ringing alarm) would be stale on a new
-    device, so it is never copied.
+    Alarms, settings and puzzle progress are backed up. Custom sound files only move with a device-to-device transfer:
+    they can be too big for the cloud backup quota. The alarm engine's state (scheduled alarm, ringing alarm) would be
+    stale on a new device, so it is never copied.
 -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="device_database" path="." />
         <include domain="device_file" path="datastore" />
+        <include domain="device_sharedpref" path="progress.xml" />
     </cloud-backup>
     <device-transfer>
         <include domain="device_database" path="." />
         <include domain="device_file" path="datastore" />
+        <include domain="device_sharedpref" path="progress.xml" />
         <include domain="device_file" path="sounds" />
     </device-transfer>
 </data-extraction-rules>

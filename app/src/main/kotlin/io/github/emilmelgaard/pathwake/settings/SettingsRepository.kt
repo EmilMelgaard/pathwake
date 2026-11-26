@@ -58,7 +58,6 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>, scope: C
         return Settings(
             theme = enumOf(p[THEME]) ?: defaults.theme,
             dynamicColor = p[DYNAMIC_COLOR] ?: defaults.dynamicColor,
-            puzzleLook = enumOf(p[PUZZLE_LOOK]) ?: defaults.puzzleLook,
             colorMarks = p[COLOR_MARKS] ?: defaults.colorMarks,
             firstDayOfWeek = enumOf<DayOfWeek>(p[FIRST_DAY_OF_WEEK]),
             crescendoSeconds = p[CRESCENDO_SECONDS]?.coerceAtLeast(0) ?: defaults.crescendoSeconds,
@@ -77,7 +76,6 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>, scope: C
     private fun write(s: Settings, p: MutablePreferences) {
         p[THEME] = s.theme.name
         p[DYNAMIC_COLOR] = s.dynamicColor
-        p[PUZZLE_LOOK] = s.puzzleLook.name
         p[COLOR_MARKS] = s.colorMarks
         s.firstDayOfWeek?.let { p[FIRST_DAY_OF_WEEK] = it.name } ?: p.remove(FIRST_DAY_OF_WEEK)
         p[CRESCENDO_SECONDS] = s.crescendoSeconds
@@ -97,7 +95,7 @@ class SettingsRepository(private val dataStore: DataStore<Preferences>, scope: C
     private companion object {
         val THEME = stringPreferencesKey("theme")
         val DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
-        val PUZZLE_LOOK = stringPreferencesKey("puzzle_look")
+
         val COLOR_MARKS = booleanPreferencesKey("color_marks")
         val FIRST_DAY_OF_WEEK = stringPreferencesKey("first_day_of_week")
         val CRESCENDO_SECONDS = intPreferencesKey("crescendo_seconds")

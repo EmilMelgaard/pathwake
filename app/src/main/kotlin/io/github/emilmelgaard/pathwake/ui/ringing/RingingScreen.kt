@@ -39,7 +39,6 @@ import io.github.emilmelgaard.pathwake.R
 import io.github.emilmelgaard.pathwake.alarm.minuteTicker
 import io.github.emilmelgaard.pathwake.appContainer
 import io.github.emilmelgaard.pathwake.ui.common.formatTime
-import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzleLook
 import io.github.emilmelgaard.pathwake.ui.puzzle.PuzzlePanel
 import java.time.LocalTime
 
@@ -57,10 +56,12 @@ fun RingingScreen(onFinished: () -> Unit, modifier: Modifier = Modifier) {
     RingingContent(
         state,
         time,
-        viewModel::onSolved,
+        {
+            state.session?.difficulty?.let(container.progress::solved)
+            viewModel.onSolved()
+        },
         viewModel::newPuzzle,
         modifier,
-        look = settings.puzzleLook,
         colorMarks = settings.colorMarks,
         onInteraction = viewModel::interacted,
         onCancelTest = viewModel::cancelTest
@@ -75,7 +76,6 @@ fun RingingContent(
     onSolved: () -> Unit,
     onNewPuzzle: () -> Unit,
     modifier: Modifier = Modifier,
-    look: PuzzleLook = PuzzleLook.PANEL,
     colorMarks: Boolean = false,
     /** Called whenever the puzzle is touched (the alarm is quieter while solving). */
     onInteraction: () -> Unit = {},
@@ -102,7 +102,7 @@ fun RingingContent(
                         Header(state, time)
                         Buttons(state, onNewPuzzle, onCancelTest)
                     }
-                    PuzzleArea(state, look, colorMarks, onSolved, puzzleModifier.weight(1f).fillMaxHeight())
+                    PuzzleArea(state, colorMarks, onSolved, puzzleModifier.weight(1f).fillMaxHeight())
                 }
             } else {
                 Column(
@@ -110,7 +110,7 @@ fun RingingContent(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Header(state, time, Modifier.padding(top = 16.dp))
-                    PuzzleArea(state, look, colorMarks, onSolved, puzzleModifier.weight(1f).fillMaxWidth())
+                    PuzzleArea(state, colorMarks, onSolved, puzzleModifier.weight(1f).fillMaxWidth())
                     Buttons(state, onNewPuzzle, onCancelTest)
                 }
             }
@@ -153,7 +153,6 @@ private fun Header(state: RingingUiState, time: LocalTime, modifier: Modifier = 
 @Composable
 private fun PuzzleArea(
     state: RingingUiState,
-    look: PuzzleLook,
     colorMarks: Boolean,
     onSolved: () -> Unit,
     modifier: Modifier = Modifier
@@ -167,7 +166,6 @@ private fun PuzzleArea(
                 PuzzlePanel(
                     puzzle = generated.puzzle,
                     onSolved = { onSolved() },
-                    look = look,
                     colorMarks = colorMarks,
                     enabled = !state.solved,
                     modifier = Modifier.fillMaxSize().testTag(RINGING_PUZZLE_TAG)
